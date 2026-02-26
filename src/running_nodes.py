@@ -1,0 +1,75 @@
+import json
+from typing import Any
+import click
+
+from requests import Session, Response
+from getpass import getpass
+
+def process_response(error: str, host: str, response: Response) -> dict[Any, Any] | None:
+    if response.status_code == 200:
+        return response.json()
+    else:
+        try:
+            returnedError = response.json()["error"]
+        except json.JSONDecodeError:
+            returnedError = response.text
+        print(f"{error}, host: {host}, status code: {response.status_code}, error: {returnedError}")
+        exit(-1)
+
+@click.command()
+@click.option("--lab", "-l", "labs", multiple=True, help="Specify labs to look for; include this option multiple times to specify multiple labs")
+@click.option("--host", "-h", "clabHost", default="localhost", help="Specify the IP address/DNS hostname of the Containerlab host; defaults to localhost (you do not need to include this option if Containerlab is running locally)")
+@click.option("--username", "-u", required=True, help="Specify the username of the Linux user used to authenticate to Containerlab")
+@click.option("--password", "-p", help="Specify the password of the Linux user used to authenticate to Containerlab; OPTIONAL. NOT RECOMMENDED. WARNING: INSECURE. USE THE CLABPASS ENVIRONMENT VARIABLE OR TYPE THE PASSWORD INTERACTIVELY. REFER TO THE DOCS FOR MORE DETAILS.")
+@click.option("--outputfile", "-o", required=True, help="Specify the path to the output file to which to write the running node information in JSON format")
+def retrieve_running_nodes(clabHost: str, outputfile: str, username: str, password: str | None = None, labs: tuple[str] = ()) -> None:
+    api = Session()
+    baseURL = f"http://{clabHost}:8080"
+    # Authenticate to the API
+    api.headers["Authorization"] = f"Bearer {process_response(error="Error authenticating to the Containerlab API",
+                                                              host=clabHost,
+                                                              response=api.post(url=f"{baseURL}/login",
+                                                                                json={"username": username,
+                                                                                      "password": password if password is not None else getpass("Enter your Containerlab host password:")}))["token"]}"
+
+    # Retrieve nodes for running labs
+    allNodes = {}
+    if labs: # runs if there is a list of labs provided
+        for lab in labs:
+            print(f"Retrieving running nodes for lab {lab}...")
+            allNodes[lab] = process_response(error=f"Error retrieving lab nodes for lab {lab} - check to make sure the lab exists and is running",
+                                          host=clabHost,
+                                          response=api.get(url=f"{baseURL}/api/v1/labs/{lab}"))
+    else: # runs to retrieve all labs as a default behavior without a list of labs
+        print("Retrieving running nodes for all labs...")
+        allNodes = process_response(error=f"Error retrieving all running labs",
+                                 host=clabHost,
+                                 response=api.get(url=f"{baseURL}/api/v1/labs"))
+        if not allNodes:
+            print("No running labs found - check to make sure there are labs running")
+            exit(-1)
+
+    # Filter for running nodes only
+    runningNodes = {k: [node for node in v if node["state"] == "running"] for k, v in allNodes.items()}
+    with open(outputfile, "w") as file:
+        file.write(json.dumps(runningNodes, indent=4))
+
+@click.command()
+@click.option("--inputfile", "-i", required=True, help="Specify the path to the input JSON file containing node(s) for one or more labs")
+@click.option("--outputfile", "-o", required=True, help="Specify the path to the output JSON file to which to write the output containing running node information in JSON format")
+def parse_inspect_output(inputfile: str, outputfile: str):
+    with open(inputfile, "r") as file:
+        data = json.load(file)
+
+    parsedOutput = {}
+    for name, nodes in data.items():
+        parsedOutput[name] = [{"name": node["Labels"]["clab-node-longname"],
+                               "image": node["Image"],
+                               "kind": node["Labels"]["clab-node-kind"],
+                               "state": node["State"],
+                               "ipv4_address": node["NetworkSettings"]["IPv4addr"],
+                               "ipv6_address": node["NetworkSettings"]["IPv6addr"]}
+                              for node in nodes if node["State"] == "running"]
+
+    with open(outputfile, "w") as file:
+        file.write(json.dumps(parsedOutput, indent=4))
