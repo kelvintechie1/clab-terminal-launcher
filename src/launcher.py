@@ -62,7 +62,7 @@ def launch():
 @launch.command()
 @launch_type
 @click.option("--session", "-s",
-              help="Specify the name of the jumphost session in SecureCRT (e.g., the session for the Containerlab host itself) using path notation (i.e., a session called s stored under a folder called f would be notated as f\s")
+              help="Specify the name of the jumphost session in SecureCRT (e.g., the session for the Containerlab host itself) using path notation (i.e., a session called s stored under a folder called f would be notated as f\\s")
 def securecrt(session: str, inputfile: str, devices: dict[str, dict[str, str]]) -> None:
     print(f"Preparing to launch SecureCRT sessions for {len(devices)} devices from {inputfile}...")
     print(f"Using jumphost: {session}")
