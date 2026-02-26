@@ -44,9 +44,17 @@ Using this tool is very simple. There are a few commands to be aware of.
 | parse-inspect-output         | Given a JSON file containing a list of nodes, output a JSON file containing only the running nodes.<br>*Note: You only need to run this command if the JSON file containing the nodes potentially contains stopped/exited nodes.*                                                                                                                              |
 | launch [*terminal emulator*] | Given a JSON file containing a list of running nodes, launch terminal sessions to all listed nodes. <br>*Warning: This command will launch all nodes in the file, regardless of whether they are marked as running or not. Make sure the input JSON file has been properly filtered by the `retrieve-running-nodes` or `filter-running-nodes` commands first.* |
 
+### Supported Launch Methods
+
+The following terminal emulators/launch methods are supported:
+* SecureCRT (VanDyke Software)
+* PuTTY (open source by Simon Tatham)
+* MTPuTTY (TTYPlus)
+* Native OpenSSH in a terminal (OpenBSD Project)
+
 ### Caveats and Limitations:
-* At this time, only SecureCRT is supported as a terminal emulator.
 * At this time, only SSH sessions are supported for connecting to the lab devices.
+* When running the `launch securecrt` command on WSL 2, the CLI has a tendency to get messed up. In most cases, you simply need to press Enter a few times to fix this. If that doesn't work, run the `reset` command. You can also just run the utility directly on Windows to avoid this issue.
 
 ### Running the Tool
 
