@@ -3,6 +3,7 @@ from typing import Any
 import click
 
 from requests import Session, Response
+import requests.exceptions
 from getpass import getpass
 
 def process_response(error: str, host: str, response: Response) -> dict[Any, Any] | None:
@@ -16,6 +17,11 @@ def process_response(error: str, host: str, response: Response) -> dict[Any, Any
         print(f"{error}, host: {host}, status code: {response.status_code}, error: {returnedError}")
         exit(-1)
 
+def write_output_to_file(outputfile: str, data: dict) -> None:
+    with open(outputfile, "w") as file:
+        file.write(json.dumps(data, indent=4))
+    print(f"Output successfully written to {outputfile}")
+
 @click.command()
 @click.option("--lab", "-l", "labs", multiple=True, help="Specify labs to look for; include this option multiple times to specify multiple labs")
 @click.option("--host", "-h", "clabHost", default="localhost", help="Specify the IP address/DNS hostname of the Containerlab host; defaults to localhost (you do not need to include this option if Containerlab is running locally)")
@@ -26,11 +32,15 @@ def retrieve_running_nodes(clabHost: str, outputfile: str, username: str, passwo
     api = Session()
     baseURL = f"http://{clabHost}:8080"
     # Authenticate to the API
-    api.headers["Authorization"] = f"Bearer {process_response(error="Error authenticating to the Containerlab API",
-                                                              host=clabHost,
-                                                              response=api.post(url=f"{baseURL}/login",
-                                                                                json={"username": username,
-                                                                                      "password": password if password is not None else getpass("Enter your Containerlab host password:")}))["token"]}"
+    try:
+        api.headers["Authorization"] = f"Bearer {process_response(error="Error authenticating to the Containerlab API",
+                                                                  host=clabHost,
+                                                                  response=api.post(url=f"{baseURL}/login",
+                                                                                    json={"username": username,
+                                                                                          "password": password if password is not None else getpass("Enter your Containerlab host password:")}))["token"]}"
+    except requests.exceptions.RequestException as e:
+        print(f"Error connecting to the Containerlab API: {e}")
+        exit(-1)
 
     # Retrieve nodes for running labs
     allNodes = {}
@@ -52,7 +62,7 @@ def retrieve_running_nodes(clabHost: str, outputfile: str, username: str, passwo
     # Filter for running nodes only
     runningNodes = {k: [node for node in v if node["state"] == "running"] for k, v in allNodes.items()}
     with open(outputfile, "w") as file:
-        file.write(json.dumps(runningNodes, indent=4))
+        write_output_to_file(outputfile=outputfile, data=runningNodes)
 
 @click.command()
 @click.option("--inputfile", "-i", required=True, help="Specify the path to the input JSON file containing node(s) for one or more labs")
@@ -63,6 +73,7 @@ def parse_inspect_output(inputfile: str, outputfile: str):
 
     parsedOutput = {}
     for name, nodes in data.items():
+        print(f"Parsing output for lab {name}...")
         parsedOutput[name] = [{"name": node["Labels"]["clab-node-longname"],
                                "image": node["Image"],
                                "kind": node["Labels"]["clab-node-kind"],
@@ -72,4 +83,4 @@ def parse_inspect_output(inputfile: str, outputfile: str):
                               for node in nodes if node["State"] == "running"]
 
     with open(outputfile, "w") as file:
-        file.write(json.dumps(parsedOutput, indent=4))
+        write_output_to_file(outputfile=outputfile, data=parsedOutput)

@@ -38,21 +38,20 @@ def parse_lab_devices(devices: dict[str, list[dict[str, str]]],
     return output
 
 def launch_type(f: Callable) -> Callable:
-    @wraps(f)
     @click.option("--inputfile", "-i", required=True,
                   help="Specify the path to the input JSON file containing running nodes")
     @click.option("--creds", "-c", required=True,
                   help="Specify the path to the input YAML file containing device credentials")
     @click.option("--method", "-m", type=click.Choice(["dns", "ipv4", "ipv6"]), default="dns",
                   help="Specifies whether to use DNS, IPv4, or IPv6 addresses to connect to lab devices in Containerlab; default is DNS")
-    def wrapper(host: str, inputfile: str, method: str, creds: str):
+    @wraps(f)
+    def wrapper(inputfile: str, creds: str, method: str, *args, **kwargs):
         with open(inputfile, "r") as file:
             devices = json.load(file)
         with open(creds, "r") as file:
             creds = yaml.safe_load(file)
 
-        parse_lab_devices(devices=devices, creds=creds, method=method)
-        f(host, inputfile)
+        f(*args, **kwargs, inputfile=inputfile, devices=parse_lab_devices(devices=devices, creds=creds, method=method))
     return wrapper
 
 @click.group()
@@ -65,7 +64,7 @@ def launch():
               help="Specify the name of the jumphost session in SecureCRT (e.g., the session for the Containerlab host itself) using path notation (i.e., a session called s stored under a folder called f would be notated as f\\s")
 def securecrt(session: str, inputfile: str, devices: dict[str, dict[str, str]]) -> None:
     print(f"Preparing to launch SecureCRT sessions for {len(devices)} devices from {inputfile}...")
-    print(f"Using jumphost: {session}")
+    print(f"Using jumphost: {session}" if session is not None else "Not using a jumphost; connecting via localhost")
     for name, node in devices.items():
         print(f'Launching SSH session to device {name} using address {node["address"]}, username {node["username"]}, and password {node["password"]}')
-        run(['securecrt', '/T', f'/firewall=Session:{session}', '/ssh2', f'{node["address"]}', '/l', f'{node["username"]}', '/password', f'{node["password"]}', '/accepthostkeys'])
+        run(['securecrt.exe', f'/firewall=Session:{session}' if session is not None else '', '/T', '/ssh2', f'{node["address"]}', '/l', f'{node["username"]}', '/password', f'{node["password"]}', '/accepthostkeys'])
