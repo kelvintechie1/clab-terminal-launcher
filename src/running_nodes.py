@@ -2,6 +2,8 @@ import json
 import yaml
 from typing import Any
 import click
+from dotenv import load_dotenv
+import os
 
 from requests import Session, Response
 import requests.exceptions
@@ -44,6 +46,11 @@ def retrieve_running_nodes(clabHost: str, outputfile: str, username: str, passwo
     # Authenticate to the API
     try:
         print(f"Authenticating to the Containerlab API at host {clabHost}...")
+
+        if password is None:
+            load_dotenv()
+            password = os.getenv("CLABPASS")
+
         api.headers["Authorization"] = f"Bearer {process_response(error="Error authenticating to the Containerlab API",
                                                                   host=clabHost,
                                                                   response=api.post(url=f"{baseURL}/login",
