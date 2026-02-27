@@ -38,7 +38,7 @@ def write_output_to_file(outputfile: str, data: dict) -> None:
 @click.option("--lab", "-l", "labs", multiple=True, help="Specify labs to look for; include this option multiple times to specify multiple labs")
 @click.option("--host", "-h", "clabHost", default="localhost", help="Specify the IP address/DNS hostname of the Containerlab host; defaults to localhost (you do not need to include this option if Containerlab is running locally)")
 @click.option("--username", "-u", required=True, help="Specify the username of the Linux user used to authenticate to Containerlab")
-@click.option("--password", "-p", help="Specify the password of the Linux user used to authenticate to Containerlab; OPTIONAL. NOT RECOMMENDED. WARNING: INSECURE. USE THE CLABPASS ENVIRONMENT VARIABLE OR TYPE THE PASSWORD INTERACTIVELY. REFER TO THE DOCS FOR MORE DETAILS.")
+@click.option("--password", "-p", help="Specify the password of the Linux user used to authenticate to Containerlab; OPTIONAL. NOT RECOMMENDED. WARNING: INSECURE. USE THE CLABPASS ENVIRONMENT VARIABLE (EITHER EXPORTED THROUGH THE SHELL OR VIA A .ENV FILE IN THE LOCAL DIRECTORY) OR TYPE THE PASSWORD INTERACTIVELY. REFER TO THE DOCS FOR MORE DETAILS.")
 @click.option("--outputfile", "-o", required=True, help="Specify the path to the output file to which to write the running node information in JSON format")
 def retrieve_running_nodes(clabHost: str, outputfile: str, username: str, password: str | None = None, labs: tuple[str] = ()) -> None:
     api = Session()

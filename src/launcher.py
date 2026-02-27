@@ -43,14 +43,24 @@ def parse_lab_devices(devicesFile: str,
                 except KeyError:
                     continue
 
-            check = {k: (k in deviceDict) for k in ("username", "password")}
-            if not all(check.values()):
-                print(f'Error: Unable to retrieve username/password for device {device["name"]}; {", ".join([f"{k.capitalize()} Present: {v}" for k, v in check.items()])}')
+            if "username" not in deviceDict:
+                print(f'Error: Unable to retrieve username for device {device["name"]}')
                 exit(-1)
+
+            if "password" not in deviceDict:
+                deviceDict["password"] = None
+                print(f'Warning: Unable to retrieve password for device {device["name"]}. Password autofill won\'t be available for this device')
 
             output[device["name"]] = deviceDict
 
     return output
+
+def run_command(cmd: list[str], executable: str) -> None:
+    try:
+        Popen(cmd)
+    except FileNotFoundError:
+        print(f"Error running launch command: {executable} not found. Try the following steps:\n(1) Running the executable provided directly in the shell to test its functionality\n(2) Using an absolute path, if you are using a relative path\n(3) Confirming that the file exists and that your user has permission to view/execute it")
+        exit(-1)
 
 def launch_type(f: Callable) -> Callable:
     @click.option("--inputfile", "-i", required=True,
@@ -68,16 +78,9 @@ def launch_type(f: Callable) -> Callable:
         print(f"Using jumphost: {jumphost}" if jumphost is not None else "Not using a jumphost; connecting via localhost")
 
         for name, node in devices.items():
-            print(f'Launching SSH session to device {name} using address {node["address"]}, port {node["port"]}, username {node["username"]}, and password {node["password"]}')
+            print(f'Launching SSH session to device {name} using address {node["address"]}, port {node["port"]}, username {node["username"]}{f", password {node["password"]}" if node["password"] is not None else ""}')
             f(**kwargs, jumphost=jumphost, node=node)
     return wrapper
-
-def run_command(cmd: list[str], executable: str) -> None:
-    try:
-        Popen(cmd)
-    except FileNotFoundError:
-        print(f"Error running launch command: {executable} not found. Try the following steps:\n(1) Running the executable provided directly in the shell to test its functionality\n(2) Using an absolute path, if you are using a relative path\n(3) Confirming that the file exists and that your user has permission to view/execute it")
-        exit(-1)
 
 @click.group()
 def launch():
@@ -90,7 +93,9 @@ def launch():
 @click.option("--executable", "-e", default="securecrt",
               help="Specify the path/command to run the SecureCRT executable; default: securecrt")
 def SecureCRT(jumphost: str | None, executable: str, node: dict[str, str]) -> None:
-    cmd = [f'{executable}', '/T', '/ssh2', f'{node["address"]}', '/l', f'{node["username"]}', '/password', f'{node["password"]}', '/P', f'{node["port"]}', '/accepthostkeys']
+    cmd = [f'{executable}', '/T', '/ssh2', f'{node["address"]}', '/l', f'{node["username"]}', '/P', f'{node["port"]}', '/accepthostkeys']
+    if node["password"] is not None:
+        cmd[6:6] = ['/password', f'{node["password"]}']
     if jumphost is not None:
         cmd.insert(1, f'/firewall=Session:{jumphost}')
     run_command(cmd=cmd, executable=executable)
@@ -102,9 +107,11 @@ def SecureCRT(jumphost: str | None, executable: str, node: dict[str, str]) -> No
 @click.option("--executable", "-e", default="putty",
               help="Specify the path/command to run the PuTTY executable; default: putty")
 def PuTTY(jumphost: str | None, executable: str, node: dict[str, str]):
-    cmd = [f'{executable}', '-ssh', f'{node["address"]}', '-l', f'{node["username"]}', '-pw', f'{node["password"]}', '-P', f'{node["port"]}']
+    cmd = [f'{executable}', '-ssh', f'{node["address"]}', '-l', f'{node["username"]}', '-P', f'{node["port"]}']
+    if node["password"] is not None:
+        cmd[6:6] = ['-pw', f'{node["password"]}']
     if jumphost is not None:
-        cmd = [cmd[0]] + ['-load', f'{jumphost}'] + cmd[1:]
+        cmd[1:1] = ['-load', f'{jumphost}']
     run_command(cmd=cmd, executable=executable)
 
 @launch.command()
@@ -141,9 +148,10 @@ def MTPuTTY(jumphost: str | None, config: str, method: str, creds: str, inputfil
         ET.SubElement(server, "ServerName").text = node["address"]
         ET.SubElement(server, "Port").text = node["port"]
         ET.SubElement(server, "UserName").text = node["username"]
-        ET.SubElement(server, "Password").text = node["password"]
-        ET.SubElement(server, "CLParams").text = f'{f"-load {jumphost} " if jumphost is not None else ""}-l {node["username"]} -pw ***** {node["address"]} -P {node["port"]}'
-        print(f"Creating session {name} in MTPuTTY database with address {node['address']}, port {node['port']}, username {node['username']}, and password {node['password']}...")
+        if node["password"] is not None:
+            ET.SubElement(server, "Password").text = node["password"]
+        ET.SubElement(server, "CLParams").text = f'{f"-load {jumphost} " if jumphost is not None else ""}-l {node["username"]}{f" -pw *****" if node["password"] is not None else ""} {node["address"]} -P {node["port"]}'
+        print(f"Creating session {name} in MTPuTTY database with address {node['address']}, port {node['port']}, username {node['username']}{f", password {node['password']}" if node["password"] is not None else ""}...")
 
     tree.write(config)
     print(f"New MTPuTTY configuration successfully written to {config}")
@@ -159,7 +167,7 @@ def MTPuTTY(jumphost: str | None, config: str, method: str, creds: str, inputfil
 def native_OpenSSH(jumphost: str | None, executable: str, node: dict[str, str], terminal: str):
     ssh_cmd = [f'{executable}', '-l', f'{node["username"]}', '-p', f'{node["port"]}', f'{node["address"]}']
     if jumphost is not None:
-        ssh_cmd = [ssh_cmd[0]] + ['-J', f'{jumphost}'] + ssh_cmd[1:]
+        ssh_cmd[1:1] = ['-J', f'{jumphost}']
 
     cmd = shlex.split(terminal) + ssh_cmd
     run_command(cmd=cmd, executable=executable)
