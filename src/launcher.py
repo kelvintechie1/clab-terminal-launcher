@@ -17,6 +17,9 @@ def parse_lab_devices(devicesFile: str,
         devices = json.load(df)
         creds = yaml.safe_load(cf)
 
+    metadata = devices["_metadata_"]
+    del devices["_metadata_"]
+
     output = {}
     for _, deviceList in devices.items():
         for device in deviceList:
@@ -28,8 +31,10 @@ def parse_lab_devices(devicesFile: str,
                     deviceDict["address"] = device["ipv4_address"]
                 case "ipv6":
                     deviceDict["address"] = device["ipv6_address"]
+                case "clabhost":
+                    deviceDict["address"] = metadata["clabHost"]
 
-            conditions = [f'node={device["name"]}', f'image={device["image"]}', f'kind={device["kind"]}']
+            conditions = [f'node={device["name"]}', f'image={device["image"]}', f'kind={device["kind"]}', "default"]
             for condition in conditions:
                 try:
                     for val in ["username", "password"]:
@@ -52,8 +57,8 @@ def launch_type(f: Callable) -> Callable:
                   help="Specify the path to the input JSON file containing running nodes")
     @click.option("--creds", "-c", required=True,
                   help="Specify the path to the input YAML file containing device credentials")
-    @click.option("--method", "-m", type=click.Choice(["dns", "ipv4", "ipv6"]), default="dns",
-                  help="Specifies whether to use DNS, IPv4, or IPv6 addresses to connect to lab devices in Containerlab; default is DNS")
+    @click.option("--method", "-m", type=click.Choice(["dns", "ipv4", "ipv6", "clabhost"]), default="dns",
+                  help="Specifies whether to use DNS hostnames, IPv4 addresses, IPv6 addresses, or the Containerlab host's DNS name/IP address to connect to lab devices in Containerlab; default is DNS")
     @wraps(f)
     def wrapper(inputfile: str, creds: str, method: str, jumphost: str | None = None, *args, **kwargs):
 
@@ -63,7 +68,7 @@ def launch_type(f: Callable) -> Callable:
         print(f"Using jumphost: {jumphost}" if jumphost is not None else "Not using a jumphost; connecting via localhost")
 
         for name, node in devices.items():
-            print(f'Launching SSH session to device {name} using address {node["address"]}, username {node["username"]}, and password {node["password"]}')
+            print(f'Launching SSH session to device {name} using address {node["address"]}, port {node["port"]}, username {node["username"]}, and password {node["password"]}')
             f(**kwargs, jumphost=jumphost, node=node)
     return wrapper
 
@@ -85,7 +90,7 @@ def launch():
 @click.option("--executable", "-e", default="securecrt",
               help="Specify the path/command to run the SecureCRT executable; default: securecrt")
 def SecureCRT(jumphost: str | None, executable: str, node: dict[str, str]) -> None:
-    cmd = [f'{executable}', '/T', '/ssh2', f'{node["address"]}', '/l', f'{node["username"]}', '/password', f'{node["password"]}', '/accepthostkeys']
+    cmd = [f'{executable}', '/T', '/ssh2', f'{node["address"]}', '/l', f'{node["username"]}', '/password', f'{node["password"]}', '/P', f'{node["port"]}', '/accepthostkeys']
     if jumphost is not None:
         cmd.insert(1, f'/firewall=Session:{jumphost}')
     run_command(cmd=cmd, executable=executable)
@@ -97,7 +102,7 @@ def SecureCRT(jumphost: str | None, executable: str, node: dict[str, str]) -> No
 @click.option("--executable", "-e", default="putty",
               help="Specify the path/command to run the PuTTY executable; default: putty")
 def PuTTY(jumphost: str | None, executable: str, node: dict[str, str]):
-    cmd = [f'{executable}', '-ssh', f'{node["address"]}', '-l', f'{node["username"]}', '-pw', f'{node["password"]}']
+    cmd = [f'{executable}', '-ssh', f'{node["address"]}', '-l', f'{node["username"]}', '-pw', f'{node["password"]}', '-P', f'{node["port"]}']
     if jumphost is not None:
         cmd = [cmd[0]] + ['-load', f'{jumphost}'] + cmd[1:]
     run_command(cmd=cmd, executable=executable)
@@ -126,16 +131,19 @@ def MTPuTTY(jumphost: str | None, config: str, method: str, creds: str, inputfil
             print(f"Removing existing session {server.find("DisplayName").text} from MTPuTTY database...")
             servers.remove(server)
 
+    print(f"Using jumphost: {jumphost}" if jumphost is not None else "Not using a jumphost; connecting via localhost")
+
     for name, node in devices.items():
         server = ET.SubElement(servers, "Node")
         server.attrib["Type"] = "1"
         ET.SubElement(server, "SavedSession").text = jumphost if jumphost is not None else "Default Settings"
         ET.SubElement(server, "DisplayName").text = name
         ET.SubElement(server, "ServerName").text = node["address"]
+        ET.SubElement(server, "Port").text = node["port"]
         ET.SubElement(server, "UserName").text = node["username"]
         ET.SubElement(server, "Password").text = node["password"]
-        ET.SubElement(server, "CLParams").text = f'{f"-load {jumphost} " if jumphost is not None else ""}-l {node["username"]} -pw ***** {node["address"]}'
-        print(f"Creating session {name} in MTPuTTY database...")
+        ET.SubElement(server, "CLParams").text = f'{f"-load {jumphost} " if jumphost is not None else ""}-l {node["username"]} -pw ***** {node["address"]} -P {node["port"]}'
+        print(f"Creating session {name} in MTPuTTY database with address {node['address']}, port {node['port']}, username {node['username']}, and password {node['password']}...")
 
     tree.write(config)
     print(f"New MTPuTTY configuration successfully written to {config}")
@@ -149,7 +157,7 @@ def MTPuTTY(jumphost: str | None, config: str, method: str, creds: str, inputfil
 @click.option("--terminal", "-t", required=True,
               help="Specify the exact command to execute your terminal of choice, INCLUDING any flags/options/parameters; this will be prepended to the OpenSSH command (i.e., <terminal command> <ssh command>)")
 def native_OpenSSH(jumphost: str | None, executable: str, node: dict[str, str], terminal: str):
-    ssh_cmd = [f'{executable}', '-l', f'{node["username"]}', f'{node["address"]}']
+    ssh_cmd = [f'{executable}', '-l', f'{node["username"]}', '-p', f'{node["port"]}', f'{node["address"]}']
     if jumphost is not None:
         ssh_cmd = [ssh_cmd[0]] + ['-J', f'{jumphost}'] + ssh_cmd[1:]
 

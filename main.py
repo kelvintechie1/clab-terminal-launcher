@@ -1,6 +1,6 @@
 import click
 
-from src.running_nodes import retrieve_running_nodes, parse_inspect_output
+from src.running_nodes import retrieve_running_nodes, parse_inspect_output, inject_custom_ports
 from src.launcher import launch
 
 @click.group()
@@ -9,6 +9,7 @@ def main():
 
 main.add_command(retrieve_running_nodes)
 main.add_command(parse_inspect_output)
+main.add_command(inject_custom_ports)
 main.add_command(launch)
 
 if __name__ == "__main__":
