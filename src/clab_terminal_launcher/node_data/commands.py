@@ -1,7 +1,7 @@
 import json
 import yaml
 import click
-from dotenv import load_dotenv
+from dotenv import dotenv_values
 import os
 from getpass import getpass
 from .helpers import process_response, write_common_metadata, write_output_to_file, ContainerlabAPI
@@ -16,20 +16,32 @@ def node_data() -> None:
     pass
 
 @node_data.command()
-@click.option("--lab", "-l", "labs", multiple=True, help="Specify labs to look for; include this option multiple times to specify multiple labs")
-@click.option("--host", "-h", "clabHost", default="localhost", help="Specify the IP address/DNS hostname of the Containerlab host; defaults to localhost (you do not need to include this option if Containerlab is running locally)")
-@click.option("--username", "-u", required=True, help="Specify the username of the Linux user used to authenticate to Containerlab")
-@click.option("--password", "-p", help="Specify the password of the Linux user used to authenticate to Containerlab; OPTIONAL. NOT RECOMMENDED. WARNING: INSECURE. USE THE CLABPASS ENVIRONMENT VARIABLE (EITHER EXPORTED THROUGH THE SHELL OR VIA A .ENV FILE IN THE LOCAL DIRECTORY) OR TYPE THE PASSWORD INTERACTIVELY. REFER TO THE DOCS FOR MORE DETAILS.")
-@click.option("--outputfile", "-o", required=True, help="Specify the path to the output file to which to write the running node information in JSON format")
-def retrieve_from_api(clabHost: str, outputfile: str, labs: tuple[str], username: str, password: str | None = None) -> None:
+@click.option("--envfile", "-e",
+              help="OPTIONAL; specify the path to the plain text Bash-style environment variable file where the password is contained as the CLABPASS variable; if specified, takes precedence over system-defined environment variable")
+@click.option("--host", "-h", "clabHost", default="localhost",
+              help="Specify the IP address/DNS hostname of the Containerlab host; defaults to localhost (you do not need to include this option if Containerlab is running locally)")
+@click.option("--labs", "-l", "labs",
+              help="Specify labs to look for; specify multiple labs as a comma-separated list")
+@click.option("--outputfile", "-o", required=True,
+              help="Specify the path to the output file to which to write the running node information in JSON format")
+@click.option("--username", "-u", required=True,
+              help="Specify the username of the Linux user used to authenticate to Containerlab")
+@click.option("--password", "-p",
+              help="Specify the password of the Linux user used to authenticate to Containerlab; OPTIONAL. NOT RECOMMENDED. WARNING: INSECURE. USE THE CLABPASS ENVIRONMENT VARIABLE (EITHER EXPORTED THROUGH THE SHELL OR VIA A .ENV FILE IN THE LOCAL DIRECTORY) OR TYPE THE PASSWORD INTERACTIVELY. REFER TO THE DOCS FOR MORE DETAILS.")
+def retrieve_from_api(envfile: str | None, clabHost: str, outputfile: str, labs: str, username: str, password: str | None = None) -> None:
     """Get details about running nodes from Containerlab API"""
     api = ContainerlabAPI(baseURL=f"http://{clabHost}:8080")
     # Authenticate to the API
     print(f"Authenticating to the Containerlab API at host {clabHost}...")
 
     if password is None:
-        load_dotenv()
-        password = os.getenv("CLABPASS")
+        if envfile is not None:
+            try:
+                password = dotenv_values(envfile)["CLABPASS"]
+            except KeyError:
+                print(f"WARNING: CLABPASS variable not found in provided environment variable file {envfile}. Proceeding without it...")
+        else:
+            password = os.getenv("CLABPASS")
         if password is not None:
             print("Password retrieved via environment variable.")
 
@@ -42,7 +54,7 @@ def retrieve_from_api(clabHost: str, outputfile: str, labs: tuple[str], username
     # Retrieve nodes for running labs
     allNodes = {}
     if labs: # runs if there is a list of labs provided
-        for lab in labs:
+        for lab in labs.replace(" ", "").split(","):
             print(f"Retrieving running nodes for lab {lab}...")
             allNodes[lab] = process_response(error=f"Error retrieving lab nodes for lab {lab} - check to make sure the lab exists and is running",
                                           host=clabHost,
@@ -63,9 +75,12 @@ def retrieve_from_api(clabHost: str, outputfile: str, labs: tuple[str], username
     write_output_to_file(outputfile=outputfile, data=write_common_metadata(host=clabHost, originalDict=runningNodes))
 
 @node_data.command()
-@click.option("--host", "-h", "clabHost", default="localhost", help="Specify the IP address/DNS hostname of the Containerlab host; defaults to localhost (you do not need to include this option if Containerlab is running locally)")
-@click.option("--inputfile", "-i", required=True, help="Specify the path to the input JSON file containing node(s) for one or more labs")
-@click.option("--outputfile", "-o", required=True, help="Specify the path to the output JSON file to which to write the output containing running node information in JSON format")
+@click.option("--host", "-h", "clabHost", default="localhost",
+              help="Specify the IP address/DNS hostname of the Containerlab host; defaults to localhost (you do not need to include this option if Containerlab is running locally)")
+@click.option("--inputfile", "-i", required=True,
+              help="Specify the path to the input JSON file containing node(s) for one or more labs")
+@click.option("--outputfile", "-o", required=True,
+              help="Specify the path to the output JSON file to which to write the output containing running node information in JSON format")
 def parse_inspect_output(inputfile: str, outputfile: str, clabHost: str) -> None:
     """Process clab inspect output for details about running nodes"""
     try:
@@ -95,10 +110,10 @@ def parse_inspect_output(inputfile: str, outputfile: str, clabHost: str) -> None
     write_output_to_file(outputfile=outputfile, data=write_common_metadata(host=clabHost, originalDict=parsedOutput))
 
 @node_data.command()
-@click.option("--portfile", "-p", required=True,
-              help="Specify the path to the input YAML file containing the port numbers for nodes with custom/non-default port numbers")
 @click.option("--datafile", "-d", required=True,
               help="Specify the path to the rendered JSON file containing running nodes that was generated by this utility using another node-data command")
+@click.option("--portfile", "-p", required=True,
+              help="Specify the path to the input YAML file containing the port numbers for nodes with custom/non-default port numbers")
 @click.option("--output", "-o",
               help="Specify the output path for the new, rendered JSON file containing the custom ports for applicable running nodes; OPTIONAL, default is to replace the existing file. Only use this option if you care about keeping both the original and newly rendered JSON files")
 def inject_custom_ports(output: str | None, portfile: str, datafile: str) -> None:

@@ -1,6 +1,7 @@
 import click
 from .node_data.commands import node_data
 from .launch.commands import launch
+from .quick.commands import quick
 
 @click.group()
 def main():
@@ -10,6 +11,7 @@ def main():
 
 main.add_command(node_data)
 main.add_command(launch)
+main.add_command(quick)
 
 if __name__ == "__main__":
     main()

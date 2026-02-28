@@ -9,10 +9,10 @@ from .helpers import parse_lab_devices, run_command
 
 def launch_type(f: Callable) -> Callable:
     """Returns a wrapper function/decorator that includes standardized functionality for all launch types/methods (i.e., all terminal emulators, etc.)"""
-    @click.option("--inputfile", "-i", required=True,
-                  help="Specify the path to the input JSON file containing running nodes")
     @click.option("--creds", "-c", required=True,
                   help="Specify the path to the input YAML file containing device credentials")
+    @click.option("--inputfile", "-i", required=True,
+                  help="Specify the path to the input JSON file containing running nodes")
     @click.option("--method", "-m", type=click.Choice(["dns", "ipv4", "ipv6", "clabhost"]), default="dns",
                   help="Specifies whether to use DNS hostnames, IPv4 addresses, IPv6 addresses, or the Containerlab host's DNS name/IP address to connect to lab devices in Containerlab; default is DNS")
     @wraps(f)
@@ -38,10 +38,10 @@ def launch() -> None:
 
 @launch.command()
 @launch_type
-@click.option("--session", "-s", "jumphost",
-              help="Specify the name of the jumphost session in SecureCRT (e.g., the session for the Containerlab host itself) using path notation (i.e., a session called s stored under a folder called f would be notated as f\\s")
 @click.option("--executable", "-e", default="securecrt",
               help="Specify the path/command to run the SecureCRT executable; default: securecrt")
+@click.option("--session", "-s", "jumphost",
+              help="Specify the name of the jumphost session in SecureCRT (e.g., the session for the Containerlab host itself) using path notation (i.e., a session called s stored under a folder called f would be notated as f\\s")
 def SecureCRT(jumphost: str | None, executable: str, node: dict[str, str]) -> None:
     """Launch SecureCRT terminals to lab devices"""
     cmd = [f'{executable}', '/T', '/ssh2', f'{node["address"]}', '/l', f'{node["username"]}', '/P', f'{node["ports"]["ssh"]}', '/accepthostkeys']
@@ -53,10 +53,10 @@ def SecureCRT(jumphost: str | None, executable: str, node: dict[str, str]) -> No
 
 @launch.command()
 @launch_type
-@click.option("--session", "-s", "jumphost",
-              help="Specify the name of the jumphost session in PuTTY (e.g., the session for the Containerlab host itself)")
 @click.option("--executable", "-e", default="putty",
               help="Specify the path/command to run the PuTTY executable; default: putty")
+@click.option("--session", "-s", "jumphost",
+              help="Specify the name of the jumphost session in PuTTY (e.g., the session for the Containerlab host itself)")
 def PuTTY(jumphost: str | None, executable: str, node: dict[str, str]) -> None:
     """Launch windowed PuTTY terminals to lab devices"""
     cmd = [f'{executable}', '-ssh', f'{node["address"]}', '-l', f'{node["username"]}', '-P', f'{node["ports"]["ssh"]}']
@@ -68,10 +68,10 @@ def PuTTY(jumphost: str | None, executable: str, node: dict[str, str]) -> None:
 
 @launch.command()
 @launch_type
-@click.option("--session", "-s", "jumphost",
-              help="Specify the name of the jumphost session in PuTTY (e.g., the session for the Containerlab host itself)")
 @click.option("--config", "-f", default="%appdata%\\TTYPlus\\mtputty.xml",
               help="Specify the path/location of the mtputty.xml configuration file; defaults to the normal location (%appdata%\\TTYPlus\\mtputty.xml); unless you are using the portable version or the XML file is referenced in a different place on your system (e.g., if you are running this script from WSL), you likely don't need to specify this option")
+@click.option("--session", "-s", "jumphost",
+              help="Specify the name of the jumphost session in PuTTY (e.g., the session for the Containerlab host itself)")
 def MTPuTTY(jumphost: str | None, config: str, devices: dict[str, dict[str, str]]) -> None:
     """Create MTPuTTY terminal sessions for lab devices (sessions must still be manually launched from MTPuTTY GUI)"""
     try:
@@ -121,10 +121,10 @@ def MTPuTTY(jumphost: str | None, config: str, devices: dict[str, dict[str, str]
 
 @launch.command()
 @launch_type
-@click.option("--session", "-s", "jumphost",
-              help="Specify the name of the jumphost (i.e., your Containerlab host), as defined in the OpenSSH client config file")
 @click.option("--executable", "-e", default="ssh",
               help="Specify the path/command to run the OpenSSH client executable")
+@click.option("--session", "-s", "jumphost",
+              help="Specify the name of the jumphost (i.e., your Containerlab host), as defined in the OpenSSH client config file")
 @click.option("--terminal", "-t", required=True,
               help="Specify the exact command to execute your terminal of choice, INCLUDING any flags/options/parameters; this will be prepended to the OpenSSH command (i.e., <terminal command> <ssh command>)")
 def native_OpenSSH(jumphost: str | None, executable: str, node: dict[str, str], terminal: str) -> None:
