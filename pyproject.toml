@@ -1,7 +1,7 @@
 [project]
-name = "clab-terminal-launcher"
+name = "clab_terminal_launcher"
 version = "0.1.0"
-description = "Add your description here"
+description = "A fully-customizable automated terminal launcher designed for use with virtualized network devices in Containerlab"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -10,6 +10,52 @@ dependencies = [
     "pyyaml>=6.0.3",
     "requests>=2.32.5",
 ]
+authors = [
+    {name = "Kelvin Tran", email = "kelvin@trankelvin.com"}
+]
+license = "GPL-3.0-or-later"
+license-files = ["LICEN[CS]E*"]
+keywords = ["clab", "terminal", "ssh", "containerlab", "securecrt", "putty", "openssh", "mtputty", "network", "networking", "nokia"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "Intended Audience :: System Administrators",
+    "Intended Audience :: Telecommunications Industry",
+    "Intended Audience :: Education",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "Environment :: Console",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
+    "Topic :: Terminals",
+    "Topic :: System :: Networking",
+    "Topic :: System :: Emulators",
+    "Topic :: Education :: Testing",
+    "Topic :: System :: Systems Administration"
+]
+
+[project.urls]
+docs = "https://github.com/kelvintechie1/clab-terminal-launcher/blob/main/README.md"
+github = "https://github.com/kelvintechie1/clab-terminal-launcher"
+issues = "https://github.com/kelvintechie1/clab-terminal-launcher/issues"
 
 [project.scripts]
-clab-terminal-launcher = "main:main"
+clab-terminal-launcher = "clab_terminal_launcher.main:main"
+
+[build-system]
+requires = ["hatchling >= 1.26"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.sdist]
+include = ["src/"]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+]
