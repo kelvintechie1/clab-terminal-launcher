@@ -1,36 +1,48 @@
 import json
+
 import yaml
 from subprocess import Popen
+
+from ..misc.helpers import read_object_from_structured_data, retrieve_and_delete_metadata, check_if_list, handle_dict_access_errors
 
 def parse_lab_devices(devicesFile: str,
                       credsFile: str,
                       method: str) -> dict[str, dict[str, str]]:
     """Helper function to parse the rendered JSON file from the node-data commands in this utility
     to extract the required information for connectivity to lab devices"""
-    with open(devicesFile, "r") as df, open(credsFile, "r") as cf:
-        devices = json.load(df)
-        creds = yaml.safe_load(cf)
+    try:
+        devices = read_object_from_structured_data(filename=devicesFile, expected_format="json")
+        creds = read_object_from_structured_data(filename=credsFile, expected_format="yaml")
+    except (json.JSONDecodeError, ValueError) as e:
+        print(f"Error while importing lab devices from {devicesFile}: {e}")
+        exit(-1)
+    except yaml.YAMLError as e:
+        print(f"Error while importing lab device credentials from {credsFile}: {e}")
+        exit(-1)
 
-    metadata = devices["_metadata_"]
-    del devices["_metadata_"]
+    metadata = retrieve_and_delete_metadata(data=devices, filename=devicesFile)
 
     output = {}
-    for _, deviceList in devices.items():
-        for device in deviceList:
+    for lab, deviceList in devices.items():
+        for idx, device in enumerate(check_if_list(data=deviceList, errorString=f"Error parsing device list for {lab} in {devicesFile}")):
             deviceDict = {}
-            match method:
-                case "dns":
-                    deviceDict["address"] = device["name"]
-                case "ipv4":
-                    deviceDict["address"] = device["ipv4_address"]
-                case "ipv6":
-                    deviceDict["address"] = device["ipv6_address"]
-                case "clabhost":
-                    deviceDict["address"] = metadata["clabHost"]
+            try:
+                match method:
+                    case "dns":
+                        deviceDict["address"] = device["name"]
+                    case "ipv4":
+                        deviceDict["address"] = device["ipv4_address"]
+                    case "ipv6":
+                        deviceDict["address"] = device["ipv6_address"]
+                    case "clabhost":
+                        deviceDict["address"] = metadata["clabHost"]
 
-            deviceDict["ports"] = device["ports"]
+                deviceDict["ports"] = device["ports"]
 
-            conditions = [f'node={device["name"]}', f'image={device["image"]}', f'kind={device["kind"]}', "default"]
+                conditions = [f'node={device["name"]}', f'image={device["image"]}', f'kind={device["kind"]}', "default"]
+            except (KeyError, TypeError) as e:
+                handle_dict_access_errors(exception=e, errorString=f"Error parsing data for device #{idx + 1} in {devicesFile}")
+
             for condition in conditions:
                 try:
                     for val in ["username", "password"]:
@@ -38,6 +50,8 @@ def parse_lab_devices(devicesFile: str,
                     break
                 except KeyError:
                     continue
+                except TypeError as e:
+                    handle_dict_access_errors(exception=e, errorString=f"Error while processing credentials for {condition} in {credsFile}")
 
             if "username" not in deviceDict:
                 print(f'Error: Unable to retrieve username for device {device["name"]}')

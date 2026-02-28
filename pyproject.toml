@@ -54,3 +54,8 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.sdist]
 include = ["src/"]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+]

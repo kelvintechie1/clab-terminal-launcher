@@ -1,15 +1,12 @@
 import json
 import yaml
-
 import click
 from dotenv import load_dotenv
 import os
-
-from requests import Session
-import requests.exceptions
 from getpass import getpass
+from .helpers import process_response, write_common_metadata, write_output_to_file, ContainerlabAPI
+from ..misc.helpers import read_object_from_structured_data, retrieve_and_delete_metadata, check_if_list, handle_dict_access_errors
 
-from .helpers import process_response, write_common_metadata, write_output_to_file
 
 @click.group()
 def node_data() -> None:
@@ -26,26 +23,21 @@ def node_data() -> None:
 @click.option("--outputfile", "-o", required=True, help="Specify the path to the output file to which to write the running node information in JSON format")
 def retrieve_from_api(clabHost: str, outputfile: str, labs: tuple[str], username: str, password: str | None = None) -> None:
     """Get details about running nodes from Containerlab API"""
-    api = Session()
-    baseURL = f"http://{clabHost}:8080"
+    api = ContainerlabAPI(baseURL=f"http://{clabHost}:8080")
     # Authenticate to the API
-    try:
-        print(f"Authenticating to the Containerlab API at host {clabHost}...")
+    print(f"Authenticating to the Containerlab API at host {clabHost}...")
 
-        if password is None:
-            load_dotenv()
-            password = os.getenv("CLABPASS")
-            if password is not None:
-                print("Password retrieved via environment variable.")
+    if password is None:
+        load_dotenv()
+        password = os.getenv("CLABPASS")
+        if password is not None:
+            print("Password retrieved via environment variable.")
 
-        api.headers["Authorization"] = f"Bearer {process_response(error="Error authenticating to the Containerlab API",
-                                                                  host=clabHost,
-                                                                  response=api.post(url=f"{baseURL}/login",
-                                                                                    json={"username": username,
-                                                                                          "password": password if password is not None else getpass("Enter your Containerlab host password:")}))["token"]}"
-    except requests.exceptions.RequestException as e:
-        print(f"Error connecting to the Containerlab API: {e}")
-        exit(-1)
+    api.headers["Authorization"] = f"Bearer {process_response(error="Error authenticating to the Containerlab API",
+                                                              host=clabHost,
+                                                              response=api.post(url="/login",
+                                                                                json={"username": username,
+                                                                                      "password": password if password is not None else getpass("Enter your Containerlab host password:")}))["token"]}"
 
     # Retrieve nodes for running labs
     allNodes = {}
@@ -54,12 +46,12 @@ def retrieve_from_api(clabHost: str, outputfile: str, labs: tuple[str], username
             print(f"Retrieving running nodes for lab {lab}...")
             allNodes[lab] = process_response(error=f"Error retrieving lab nodes for lab {lab} - check to make sure the lab exists and is running",
                                           host=clabHost,
-                                          response=api.get(url=f"{baseURL}/api/v1/labs/{lab}"))
+                                          response=api.get(url="/api/v1/labs/{lab}"))
     else: # runs to retrieve all labs as a default behavior without a list of labs
         print("Retrieving running nodes for all labs...")
         allNodes = process_response(error="Error retrieving all running labs",
                                  host=clabHost,
-                                 response=api.get(url=f"{baseURL}/api/v1/labs"))
+                                 response=api.get(url="/api/v1/labs"))
         if not allNodes:
             print("No running labs found - check to make sure there are labs running")
             exit(-1)
@@ -68,8 +60,7 @@ def retrieve_from_api(clabHost: str, outputfile: str, labs: tuple[str], username
 
     # Filter for running nodes only
     runningNodes = {k: [(node | {"ports": {"ssh": 22}}) for node in v if node["state"] == "running"] for k, v in allNodes.items()}
-    parsedOutput = write_common_metadata(host=clabHost, originalDict=runningNodes)
-    write_output_to_file(outputfile=outputfile, data=parsedOutput)
+    write_output_to_file(outputfile=outputfile, data=write_common_metadata(host=clabHost, originalDict=runningNodes))
 
 @node_data.command()
 @click.option("--host", "-h", "clabHost", default="localhost", help="Specify the IP address/DNS hostname of the Containerlab host; defaults to localhost (you do not need to include this option if Containerlab is running locally)")
@@ -77,27 +68,31 @@ def retrieve_from_api(clabHost: str, outputfile: str, labs: tuple[str], username
 @click.option("--outputfile", "-o", required=True, help="Specify the path to the output JSON file to which to write the output containing running node information in JSON format")
 def parse_inspect_output(inputfile: str, outputfile: str, clabHost: str) -> None:
     """Process clab inspect output for details about running nodes"""
-    with open(inputfile, "r") as file:
-        data = json.load(file)
+    try:
+        data = read_object_from_structured_data(filename=inputfile, expected_format="json")
+    except (json.JSONDecodeError, ValueError) as e:
+        print(f"Error while reading clab inspect output from {inputfile}: {e}")
+        exit(-1)
 
     parsedOutput = {}
     for name, nodes in data.items():
+        errorString = f"Error while processing lab {name} from the clab inspect output in {inputfile}"
         print(f"Parsing output for lab {name}...")
-        parsedOutput[name] = [{"name": node["Labels"]["clab-node-longname"],
-                               "image": node["Image"],
-                               "kind": node["Labels"]["clab-node-kind"],
-                               "state": node["State"],
-                               "ipv4_address": node["NetworkSettings"]["IPv4addr"],
-                               "ipv6_address": node["NetworkSettings"]["IPv6addr"],
-                               "ports": {
-                                   "ssh": 22
-                               }}
-                              for node in nodes if node["State"] == "running"]
+        try:
+            parsedOutput[name] = [{"name": node["Labels"]["clab-node-longname"],
+                                   "image": node["Image"],
+                                   "kind": node["Labels"]["clab-node-kind"],
+                                   "state": node["State"],
+                                   "ipv4_address": node["NetworkSettings"]["IPv4addr"],
+                                   "ipv6_address": node["NetworkSettings"]["IPv6addr"],
+                                   "ports": {
+                                       "ssh": 22
+                                   }}
+                                  for node in check_if_list(data=nodes, errorString=errorString) if node["State"] == "running"]
+        except (KeyError, TypeError) as e:
+            handle_dict_access_errors(exception=e, errorString=errorString)
 
-    finalOutput = write_common_metadata(host=clabHost, originalDict=parsedOutput)
-
-    with open(outputfile, "w") as file:
-        write_output_to_file(outputfile=outputfile, data=finalOutput)
+    write_output_to_file(outputfile=outputfile, data=write_common_metadata(host=clabHost, originalDict=parsedOutput))
 
 @node_data.command()
 @click.option("--portfile", "-p", required=True,
@@ -110,19 +105,39 @@ def inject_custom_ports(output: str | None, portfile: str, datafile: str) -> Non
     """Customize port numbers for sessions to lab devices in rendered output
 
     REQUIRES rendered output generated by this utility using another node-data command"""
-    with open(portfile, "r") as pf, open(datafile, "r") as df:
-        data = json.load(df)
-        ports = yaml.safe_load(pf)
+    try:
+        data = read_object_from_structured_data(filename=datafile, expected_format="json")
+        ports = read_object_from_structured_data(filename=portfile, expected_format="yaml")
+    except (json.JSONDecodeError, ValueError) as e:
+        print(f"Error while reading rendered JSON file from {datafile}: {e}")
+        exit(-1)
+    except yaml.YAMLError as e:
+        print(f"Error while reading YAML file containing ports from {datafile}: {e}")
+        exit(-1)
 
-    metadata = data["_metadata_"]
-    del data["_metadata_"]
-    nodeNames = {lab: [node["name"] for node in nodes] for lab, nodes in data.items()}
+    metadata = retrieve_and_delete_metadata(data=data, filename=datafile)
+
+    try:
+        nodeNames = {}
+        for lab, nodes in data.items():
+            nodeNames[lab] = [node["name"] for node in check_if_list(data=nodes, errorString=f"Error while processing lab {lab} from rendered JSON data")]
+    except (KeyError, TypeError) as e:
+        handle_dict_access_errors(exception=e, errorString=f"Error while processing nodes in lab {lab} from {datafile}")
+
     for lab, nodes in ports.items():
-        for name, ports in nodes.items():
-            print(f"Changing SSH port number for node {name} to {ports['ssh']}...")
-            data[lab][nodeNames[lab].index(name)]["ports"]["ssh"] = ports["ssh"]
+        if not isinstance(nodes, dict):
+            print(f"Error while processing lab {lab} from rendered JSON data: nodes not contained in a proper YAML mapping")
+            exit(-1)
+
+        try:
+            for name, ports in nodes.items():
+                print(f"Changing SSH port number for node {name} to {ports['ssh']}...")
+                data[lab][nodeNames[lab].index(name)]["ports"]["ssh"] = ports["ssh"]
+        except (KeyError, TypeError) as e:
+            handle_dict_access_errors(exception=e, errorString=f"Error while processing nodes in lab {lab} from {portfile}")
+            exit(-1)
+
 
     fileName = output if output is not None else datafile
-    with open(fileName, "w") as df:
-        df.write(json.dumps({"_metadata_": metadata} | data, indent=4))
-        print(f"Output with custom port numbers written to {fileName}")
+    print(f"Writing output with custom port numbers to {fileName}...")
+    write_output_to_file(outputfile=fileName, data=(metadata | data))

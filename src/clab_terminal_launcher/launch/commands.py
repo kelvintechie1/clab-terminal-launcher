@@ -1,14 +1,14 @@
+import shutil
 from functools import wraps
 from typing import Callable
 import shlex
 from xml.etree import ElementTree as ET
 from shutil import copy
-
 import click
 from .helpers import parse_lab_devices, run_command
 
 def launch_type(f: Callable) -> Callable:
-    """Wrapper function/decorator that includes standardized functionality for all launch types/methods (i.e., all terminal emulators, etc.)"""
+    """Returns a wrapper function/decorator that includes standardized functionality for all launch types/methods (i.e., all terminal emulators, etc.)"""
     @click.option("--inputfile", "-i", required=True,
                   help="Specify the path to the input JSON file containing running nodes")
     @click.option("--creds", "-c", required=True,
@@ -17,7 +17,6 @@ def launch_type(f: Callable) -> Callable:
                   help="Specifies whether to use DNS hostnames, IPv4 addresses, IPv6 addresses, or the Containerlab host's DNS name/IP address to connect to lab devices in Containerlab; default is DNS")
     @wraps(f)
     def wrapper(inputfile: str, creds: str, method: str, jumphost: str | None = None, **kwargs):
-
         devices = parse_lab_devices(devicesFile=inputfile, credsFile=creds, method=method)
 
         if f.__name__ in ["MTPuTTY"]:
@@ -75,14 +74,28 @@ def PuTTY(jumphost: str | None, executable: str, node: dict[str, str]) -> None:
               help="Specify the path/location of the mtputty.xml configuration file; defaults to the normal location (%appdata%\\TTYPlus\\mtputty.xml); unless you are using the portable version or the XML file is referenced in a different place on your system (e.g., if you are running this script from WSL), you likely don't need to specify this option")
 def MTPuTTY(jumphost: str | None, config: str, devices: dict[str, dict[str, str]]) -> None:
     """Create MTPuTTY terminal sessions for lab devices (sessions must still be manually launched from MTPuTTY GUI)"""
-    copy(src=config, dst="mtputty_backup.xml")
+    try:
+        copy(src=config, dst="mtputty_backup.xml")
+    except (OSError, shutil.SameFileError) as e:
+        print(f"Error while creating a backup of the MTPuTTY configuration at \"mtputty_backup.xml\" in the current directory: {e}")
+        exit(-1)
+
     print("Backup of the MTPuTTY configuration successfully created in the \"mtputty_backup.xml\" file in the current directory")
-    tree = ET.parse(config)
-    servers = tree.find("./Servers/Putty")
-    for server in list(servers):
-        if server.find("DisplayName").text in devices:
-            print(f"Removing existing session {server.find("DisplayName").text} from MTPuTTY database...")
-            servers.remove(server)
+
+    try:
+        tree = ET.parse(config)
+
+        servers = tree.find("./Servers/Putty")
+        if servers is None:
+            raise ET.ParseError("<Servers><Putty> NOT found under the root XML element")
+
+        for server in list(servers):
+            if server.find("DisplayName").text in devices:
+                print(f"Removing existing session {server.find("DisplayName").text} from MTPuTTY database...")
+                servers.remove(server)
+    except (ET.ParseError, TypeError, AttributeError, FileNotFoundError) as e:
+        print(f"Error while parsing the provided MTPuTTY XML configuration file: {e}")
+        exit(-1)
 
     print(f"Using jumphost: {jumphost}" if jumphost is not None else "Not using a jumphost; connecting via localhost")
 
@@ -99,7 +112,11 @@ def MTPuTTY(jumphost: str | None, config: str, devices: dict[str, dict[str, str]
         ET.SubElement(server, "CLParams").text = f'{f"-load {jumphost} " if jumphost is not None else ""}-l {node["username"]}{" -pw *****" if node["password"] is not None else ""} {node["address"]} -P {node["ports"]["ssh"]}'
         print(f"Creating session {name} in MTPuTTY database with address {node['address']}, port {node['port']}, username {node['username']}{f", password {node['password']}" if node["password"] is not None else ""}...")
 
-    tree.write(config)
+    try:
+        tree.write(config)
+    except OSError as e:
+        print(f"Error writing the new MTPuTTY configuration file to {config}: {e}")
+        exit(-1)
     print(f"New MTPuTTY configuration successfully written to {config}")
 
 @launch.command()

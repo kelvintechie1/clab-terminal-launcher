@@ -1,6 +1,19 @@
 from typing import Any
-from requests import Response
+from requests import Response, Session
+import requests.exceptions
 import json
+
+class ContainerlabAPI(Session):
+    def __init__(self, baseURL: str) -> None:
+        self.baseURL = baseURL
+        super().__init__()
+
+    def request(self, method: str, url: str, *args, **kwargs) -> Response:
+        try:
+            return super().request(method, f"{self.baseURL}{url}", *args, **kwargs)
+        except requests.exceptions.RequestException as e:
+            print(f"Error while attempting to connect to the Containerlab API: {e}")
+            exit(-1)
 
 def process_response(error: str, host: str, response: Response) -> dict[str, Any] | None:
     """Helper function to parse responses from the Containerlab API to determine the status of the
@@ -27,6 +40,10 @@ def write_common_metadata(host: str, originalDict: dict[str, Any]) -> dict[str, 
 
 def write_output_to_file(outputfile: str, data: dict[str, Any]) -> None:
     """Helper function to write rendered JSON output to an output file and report the status"""
-    with open(outputfile, "w") as file:
-        file.write(json.dumps(data, indent=4))
+    try:
+        with open(outputfile, "w") as file:
+            file.write(json.dumps(data, indent=4))
+    except OSError as e:
+        print(f"Error, unable to write output to file {outputfile}: {e}")
+        exit(-1)
     print(f"Output successfully written to {outputfile}")

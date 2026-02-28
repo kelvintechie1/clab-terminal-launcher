@@ -1,5 +1,4 @@
 import click
-
 from .node_data.commands import node_data
 from .launch.commands import launch
 
