@@ -1,7 +1,7 @@
 import click
 from dotenv import dotenv_values
 
-from .helpers import validate_required_keys, parse_settings
+from .helpers import validate_required_keys, parse_settings, run_command
 from ..node_data.commands import retrieve_from_api, parse_inspect_output, inject_custom_ports
 from ..launch.commands import SecureCRT, PuTTY, MTPuTTY, native_OpenSSH
 
@@ -29,7 +29,8 @@ def quick(ctx: click.Context, config: str) -> None:
                             "outputfile": "RETRIEVE_API_OUTPUT"}
             optionalKeys = {"password": "RETRIEVE_API_PASSWORD",
                             "clabHost": "RETRIEVE_API_HOST",
-                            "labs": "RETRIEVE_API_LABS"}
+                            "labs": "RETRIEVE_API_LABS",
+                            "envfile": "RETRIEVE_API_ENVFILE"}
             task = "API"
             func = retrieve_from_api
         case "inspect":
@@ -42,20 +43,15 @@ def quick(ctx: click.Context, config: str) -> None:
             print(f"Error, the retrieval method provided under the \"BASIC_RETRIEVAL_METHOD\" option ({settings['BASIC_RETRIEVAL_METHOD']}) is not valid")
             exit(-1)
 
-    validate_required_keys(task=f"validating {task} settings",
-                           requiredKeys=requiredKeys,
-                           settings=settings,
-                           config=config)
-
-    retrievalSettings = parse_settings(settings=settings, searchKeys=(requiredKeys | optionalKeys))
-    ctx.invoke(func, **retrievalSettings)
+    run_command(task=task, settings=settings, config=config, ctx=ctx, func=func, requiredKeys=requiredKeys, optionalKeys=optionalKeys)
 
     # Inject custom ports if a port file is provided
     if "RETRIEVE_PORTS_FILE" in settings:
         requiredKeys = {"portfile": "RETRIEVE_PORTS_FILE"}
         optionalKeys = {"output": "RETRIEVE_PORTS_OUTPUT"}
         ctx.invoke(inject_custom_ports, **(parse_settings(settings=settings,
-                                                          searchKeys=(requiredKeys | optionalKeys)) | {"datafile": retrievalSettings["outputfile"]}))
+                                                          searchKeys=(requiredKeys | optionalKeys)) | {"datafile": parse_settings(settings=settings,
+                                                                                                                                  searchKeys=requiredKeys["outputfile"])["outputfile"]}))
 
     # Launch sessions to connect to lab devices in Containerlab, based on the provided launch method
     match settings["BASIC_LAUNCH_METHOD"].lower():
@@ -92,10 +88,5 @@ def quick(ctx: click.Context, config: str) -> None:
             print(f"Error, the launch method provided under the \"BASIC_LAUNCH_METHOD\" option ({settings['BASIC_LAUNCH_METHOD']}) is not valid")
             exit(-1)
 
-    validate_required_keys(task=f"validating {func.__dict__["name"].replace('_', ' ')} settings",
-                           requiredKeys=requiredKeys,
-                           settings=settings,
-                           config=config)
-
-    launchSettings = parse_settings(settings=settings, searchKeys=(requiredKeys | optionalKeys))
-    ctx.invoke(func, **launchSettings)
+    run_command(task=f"validating {func.__dict__["name"].replace('_', ' ')} settings", settings=settings, config=config,
+                ctx=ctx, func=func, requiredKeys=requiredKeys, optionalKeys=optionalKeys)

@@ -1,0 +1,142 @@
+{
+  "test": [
+    {
+      "Names": [
+        "clab-test-client1"
+      ],
+      "ID": "efd8b0e74b434a0871cce16abba05364c8e65fdda2f86cab93b08de3707aa90c",
+      "ShortID": "efd8b0e74b43",
+      "Image": "ghcr.io/srl-labs/network-multitool:latest",
+      "State": "running",
+      "Status": "Up 29 hours",
+      "Labels": {
+        "clab-mgmt-net-bridge": "br-52cdf639657c",
+        "clab-node-group": "",
+        "clab-node-kind": "linux",
+        "clab-node-lab-dir": "/home/kelvintr/labs/clab-test/client1",
+        "clab-node-longname": "clab-test-client1",
+        "clab-node-name": "client1",
+        "clab-node-type": "",
+        "clab-owner": "kelvintr",
+        "clab-topo-file": "/home/kelvintr/labs/test.clab.yml",
+        "containerlab": "test"
+      },
+      "Pid": 915741,
+      "NetworkName": "clab",
+      "NetworkSettings": {
+        "IPv4addr": "172.20.20.3",
+        "IPv4pLen": 24,
+        "IPv4Gw": "172.20.20.1",
+        "IPv6addr": "3fff:172:20:20::3",
+        "IPv6pLen": 64,
+        "IPv6Gw": "3fff:172:20:20::1"
+      },
+      "Mounts": [
+        {
+          "Source": "",
+          "Destination": ""
+        }
+      ],
+      "Runtime": {
+        "Client": {}
+      },
+      "Ports": [
+        {
+          "port": 11443,
+          "protocol": "tcp"
+        },
+        {
+          "port": 1180,
+          "protocol": "tcp"
+        },
+        {
+          "host_ip": "0.0.0.0",
+          "host_port": 2501,
+          "port": 22,
+          "protocol": "tcp"
+        },
+        {
+          "host_ip": "::",
+          "host_port": 2501,
+          "port": 22,
+          "protocol": "tcp"
+        },
+        {
+          "port": 443,
+          "protocol": "tcp"
+        },
+        {
+          "port": 80,
+          "protocol": "tcp"
+        },
+        {
+          "port": 8080,
+          "protocol": "tcp"
+        }
+      ]
+    },
+    {
+      "Names": [
+        "clab-test-srl1"
+      ],
+      "ID": "60df127b249c912dd610a14a95330559add7d473749a6893dd6c4a8dc6a4f6f3",
+      "ShortID": "60df127b249c",
+      "Image": "ghcr.io/nokia/srlinux:latest",
+      "State": "running",
+      "Status": "Up 29 hours",
+      "Labels": {
+        "additional_build_type": "NA",
+        "arch": "amd64",
+        "branch_type": "release",
+        "build_type": "no-debug",
+        "clab-mgmt-net-bridge": "br-52cdf639657c",
+        "clab-node-group": "",
+        "clab-node-kind": "nokia_srlinux",
+        "clab-node-lab-dir": "/home/kelvintr/labs/clab-test/srl1",
+        "clab-node-longname": "clab-test-srl1",
+        "clab-node-name": "srl1",
+        "clab-node-type": "ixrd1",
+        "clab-owner": "kelvintr",
+        "clab-topo-file": "/home/kelvintr/labs/test.clab.yml",
+        "containerlab": "test",
+        "description": "SRLinux OS",
+        "org.opencontainers.image.ref.name": "SRLinux",
+        "org.opencontainers.image.version": "25.10.1-399",
+        "version": "25.10.1-399"
+      },
+      "Pid": 915733,
+      "NetworkName": "clab",
+      "NetworkSettings": {
+        "IPv4addr": "172.20.20.2",
+        "IPv4pLen": 24,
+        "IPv4Gw": "172.20.20.1",
+        "IPv6addr": "3fff:172:20:20::2",
+        "IPv6pLen": 64,
+        "IPv6Gw": "3fff:172:20:20::1"
+      },
+      "Mounts": [
+        {
+          "Source": "/home/kelvintr/labs/clab-test/srl1/config",
+          "Destination": "/etc/opt/srlinux"
+        }
+      ],
+      "Runtime": {
+        "Client": {}
+      },
+      "Ports": [
+        {
+          "host_ip": "0.0.0.0",
+          "host_port": 2500,
+          "port": 22,
+          "protocol": "tcp"
+        },
+        {
+          "host_ip": "::",
+          "host_port": 2500,
+          "port": 22,
+          "protocol": "tcp"
+        }
+      ]
+    }
+  ]
+}

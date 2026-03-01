@@ -27,15 +27,17 @@ def parse_lab_devices(devicesFile: str,
         for idx, device in enumerate(check_if_list(data=deviceList, errorString=f"Error parsing device list for {lab} in {devicesFile}")):
             deviceDict = {}
             try:
-                match method:
-                    case "dns":
-                        deviceDict["address"] = device["name"]
-                    case "ipv4":
-                        deviceDict["address"] = device["ipv4_address"]
-                    case "ipv6":
-                        deviceDict["address"] = device["ipv6_address"]
-                    case "clabhost":
-                        deviceDict["address"] = metadata["clabHost"]
+                deviceDict["name"] = device["name"]
+                if device["method"] == "clabHost":
+                    deviceDict["address"] = metadata["clabHost"]
+                else:
+                    match method:
+                        case "dns":
+                            deviceDict["address"] = device["name"]
+                        case "ipv4":
+                            deviceDict["address"] = device["ipv4_address"]
+                        case "ipv6":
+                            deviceDict["address"] = device["ipv6_address"]
 
                 deviceDict["ports"] = device["ports"]
 

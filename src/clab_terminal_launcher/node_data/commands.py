@@ -17,7 +17,7 @@ def node_data() -> None:
 
 @node_data.command()
 @click.option("--envfile", "-e",
-              help="OPTIONAL; specify the path to the plain text Bash-style environment variable file where the password is contained as the CLABPASS variable; if specified, takes precedence over system-defined environment variable")
+              help="OPTIONAL; specify the path to the plain text Bash-style environment variable file where the password is contained as the CLABPASS variable; if specified, takes precedence over default behavior of using system-defined environment variable")
 @click.option("--host", "-h", "clabHost", default="localhost",
               help="Specify the IP address/DNS hostname of the Containerlab host; defaults to localhost (you do not need to include this option if Containerlab is running locally)")
 @click.option("--labs", "-l", "labs",
@@ -71,7 +71,7 @@ def retrieve_from_api(envfile: str | None, clabHost: str, outputfile: str, labs:
         print(f"Labs found: {", ".join(allNodes)}")
 
     # Filter for running nodes only
-    runningNodes = {k: [(node | {"ports": {"ssh": 22}}) for node in v if node["state"] == "running"] for k, v in allNodes.items()}
+    runningNodes = {k: [(node | {"ports": {"ssh": 22}, "method": None}) for node in v if node["state"] == "running"] for k, v in allNodes.items()}
     write_output_to_file(outputfile=outputfile, data=write_common_metadata(host=clabHost, originalDict=runningNodes))
 
 @node_data.command()
@@ -102,7 +102,8 @@ def parse_inspect_output(inputfile: str, outputfile: str, clabHost: str) -> None
                                    "ipv6_address": node["NetworkSettings"]["IPv6addr"],
                                    "ports": {
                                        "ssh": 22
-                                   }}
+                                   },
+                                   "method": None}
                                   for node in check_if_list(data=nodes, errorString=errorString) if node["State"] == "running"]
         except (KeyError, TypeError) as e:
             handle_dict_access_errors(exception=e, errorString=errorString)
@@ -148,6 +149,7 @@ def inject_custom_ports(output: str | None, portfile: str, datafile: str) -> Non
             for name, ports in nodes.items():
                 print(f"Changing SSH port number for node {name} to {ports['ssh']}...")
                 data[lab][nodeNames[lab].index(name)]["ports"]["ssh"] = ports["ssh"]
+                data[lab][nodeNames[lab].index(name)]["method"] = "clabHost"
         except (KeyError, TypeError) as e:
             handle_dict_access_errors(exception=e, errorString=f"Error while processing nodes in lab {lab} from {portfile}")
             exit(-1)
@@ -155,4 +157,4 @@ def inject_custom_ports(output: str | None, portfile: str, datafile: str) -> Non
 
     fileName = output if output is not None else datafile
     print(f"Writing output with custom port numbers to {fileName}...")
-    write_output_to_file(outputfile=fileName, data=(metadata | data))
+    write_output_to_file(outputfile=fileName, data=({"_metadata_": metadata} | data))
