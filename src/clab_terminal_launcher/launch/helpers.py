@@ -75,3 +75,5 @@ def run_command(cmd: list[str], executable: str) -> None:
     except FileNotFoundError:
         print(f"Error running launch command: {executable} not found. Try the following steps:\n(1) Running the executable provided directly in the shell to test its functionality\n(2) Using an absolute path, if you are using a relative path\n(3) Confirming that the file exists and that your user has permission to view/execute it")
         exit(-1)
+    except OSError as e:
+        print(f"Error running launch command {executable}: {e}")
