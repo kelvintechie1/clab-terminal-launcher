@@ -31,5 +31,8 @@ jobs:
     - name: Install and Lint with Ruff
       uses: astral-sh/ruff-action@v3
 
+    - name: Build Package
+      run: uv build
+
     - name: Publish to PyPI
       run: uv publish
