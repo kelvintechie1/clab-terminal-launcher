@@ -1,0 +1,29 @@
+{
+    "_metadata_": {
+        "clabHost": "ktl-clab-svr01.lab.trankelvin.com"
+    },
+    "test": [
+        {
+            "name": "clab-test-client1",
+            "image": "ghcr.io/srl-labs/network-multitool:latest",
+            "kind": "linux",
+            "state": "running",
+            "ipv4_address": "172.20.20.3",
+            "ipv6_address": "3fff:172:20:20::3",
+            "ports": {
+                "ssh": 22
+            }
+        },
+        {
+            "name": "clab-test-srl1",
+            "image": "ghcr.io/nokia/srlinux:latest",
+            "kind": "nokia_srlinux",
+            "state": "running",
+            "ipv4_address": "172.20.20.2",
+            "ipv6_address": "3fff:172:20:20::2",
+            "ports": {
+                "ssh": 22
+            }
+        }
+    ]
+}

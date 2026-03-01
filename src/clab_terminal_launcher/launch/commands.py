@@ -59,9 +59,9 @@ def SecureCRT(jumphost: str | None, executable: str, node: dict[str, str]) -> No
               help="Specify the name of the jumphost session in PuTTY (e.g., the session for the Containerlab host itself)")
 def PuTTY(jumphost: str | None, executable: str, node: dict[str, str]) -> None:
     """Launch windowed PuTTY terminals to lab devices"""
-    cmd = [f'{executable}', '-ssh', f'{node["address"]}', '-l', f'{node["username"]}', '-P', f'{node["ports"]["ssh"]}']
+    cmd = [f'{executable}', '-ssh', '-P', f'{node["ports"]["ssh"]}', f'{node["address"]}', '-l', f'{node["username"]}']
     if node["password"] is not None:
-        cmd[6:6] = ['-pw', f'{node["password"]}']
+        cmd[7:7] = ['-pw', f'{node["password"]}']
     if jumphost is not None:
         cmd[1:1] = ['-load', f'{jumphost}']
     run_command(cmd=cmd, executable=executable)
@@ -109,7 +109,7 @@ def MTPuTTY(jumphost: str | None, config: str, devices: dict[str, dict[str, str]
         ET.SubElement(server, "UserName").text = node["username"]
         if node["password"] is not None:
             ET.SubElement(server, "Password").text = node["password"]
-        ET.SubElement(server, "CLParams").text = f'{f"-load {jumphost} " if jumphost is not None else ""}-l {node["username"]}{" -pw *****" if node["password"] is not None else ""} {node["address"]} -P {node["ports"]["ssh"]}'
+        ET.SubElement(server, "CLParams").text = f'{f"-load {jumphost} " if jumphost is not None else ""}-P {node["ports"]["ssh"]} -l {node["username"]}{" -pw *****" if node["password"] is not None else ""} {node["address"]}'
         print(f"Creating session {name} in MTPuTTY database with address {node['address']}, port {node['port']}, username {node['username']}{f", password {node['password']}" if node["password"] is not None else ""}...")
 
     try:

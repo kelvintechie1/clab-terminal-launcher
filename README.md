@@ -72,7 +72,7 @@ That's where the terminal launcher for Containerlab comes into play. Could I hav
 
 ### Caveats, Limitations, and Warnings
 * **Only SSH is supported as a connection method at this time.** However, the utility's codebase is architected such that it would be fairly easy to expand beyond SSH, so that could change if the need arises!
-* **When running `launch` commands on WSL 2 referencing a Windows executable, the CLI has a tendency to get messed up.** In most cases, you simply need to press Enter a few times to fix this. If that doesn't work, run the `reset` command. You can also just run the utility directly on Windows to avoid this issue.
+* **When running `launch` commands on WSL 2 referencing a Windows executable, the CLI has a tendency to get messed up.** In most cases, you simply need to run the `reset` command to fix this. You can also just run the utility directly on Windows to avoid this issue.
 * ***WARNING***: It is assumed that lab device passwords are **NOT** sensitive. They are stored in **PLAIN TEXT** inside of the credentials YAML file. Do **NOT** use a password that actually matters for your lab devices!!!
 
 ## Installation and Usage Documentation

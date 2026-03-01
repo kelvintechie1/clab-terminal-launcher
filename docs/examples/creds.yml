@@ -1,0 +1,6 @@
+kind=nokia_srlinux:
+  username: admin
+  password: NokiaSrl1!
+image=ghcr.io/srl-labs/network-multitool:latest:
+  username: admin
+  password: multit00l

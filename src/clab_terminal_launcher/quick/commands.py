@@ -29,7 +29,8 @@ def quick(ctx: click.Context, config: str) -> None:
                             "outputfile": "RETRIEVE_API_OUTPUT"}
             optionalKeys = {"password": "RETRIEVE_API_PASSWORD",
                             "clabHost": "RETRIEVE_API_HOST",
-                            "labs": "RETRIEVE_API_LABS"}
+                            "labs": "RETRIEVE_API_LABS",
+                            "envfile": "RETRIEVE_API_ENVFILE"}
             task = "API"
             func = retrieve_from_api
         case "inspect":
