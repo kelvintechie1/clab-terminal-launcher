@@ -5,6 +5,8 @@ import shlex
 from xml.etree import ElementTree as ET
 from shutil import copy
 import click
+import os
+import re
 from .helpers import parse_lab_devices, run_command
 
 def launch_type(f: Callable) -> Callable:
@@ -13,8 +15,8 @@ def launch_type(f: Callable) -> Callable:
                   help="Specify the path to the input YAML file containing device credentials")
     @click.option("--inputfile", "-i", required=True,
                   help="Specify the path to the input JSON file containing running nodes")
-    @click.option("--method", "-m", type=click.Choice(["dns", "ipv4", "ipv6", "clabhost"]), default="dns",
-                  help="Specifies whether to use DNS hostnames, IPv4 addresses, IPv6 addresses, or the Containerlab host's DNS name/IP address to connect to lab devices in Containerlab; default is DNS")
+    @click.option("--method", "-m", type=click.Choice(["dns", "ipv4", "ipv6"]), default="dns",
+                  help="Specifies whether to use DNS hostnames, IPv4 addresses, or IPv6 addresses to connect to lab devices in Containerlab; default is DNS")
     @wraps(f)
     def wrapper(inputfile: str, creds: str, method: str, jumphost: str | None = None, **kwargs):
         devices = parse_lab_devices(devicesFile=inputfile, credsFile=creds, method=method)
@@ -44,7 +46,7 @@ def launch() -> None:
               help="Specify the name of the jumphost session in SecureCRT (e.g., the session for the Containerlab host itself) using path notation (i.e., a session called s stored under a folder called f would be notated as f\\s")
 def SecureCRT(jumphost: str | None, executable: str, node: dict[str, str]) -> None:
     """Launch SecureCRT terminals to lab devices"""
-    cmd = [f'{executable}', '/T', '/ssh2', f'{node["address"]}', '/l', f'{node["username"]}', '/P', f'{node["ports"]["ssh"]}', '/accepthostkeys']
+    cmd = [f'{executable}', '/TITLEBAR', f'{node["name"]}', '/T', '/ssh2', f'{node["address"]}', '/l', f'{node["username"]}', '/P', f'{node["ports"]["ssh"]}', '/accepthostkeys']
     if node["password"] is not None:
         cmd[6:6] = ['/password', f'{node["password"]}']
     if jumphost is not None:
@@ -59,7 +61,7 @@ def SecureCRT(jumphost: str | None, executable: str, node: dict[str, str]) -> No
               help="Specify the name of the jumphost session in PuTTY (e.g., the session for the Containerlab host itself)")
 def PuTTY(jumphost: str | None, executable: str, node: dict[str, str]) -> None:
     """Launch windowed PuTTY terminals to lab devices"""
-    cmd = [f'{executable}', '-ssh', '-P', f'{node["ports"]["ssh"]}', f'{node["address"]}', '-l', f'{node["username"]}']
+    cmd = [f'{executable}', '-ssh', '-P', f'{node["ports"]["ssh"]}', f'{node["address"]}', '-l', f'{node["username"]}', '-loghost', f'{node["name"]}']
     if node["password"] is not None:
         cmd[7:7] = ['-pw', f'{node["password"]}']
     if jumphost is not None:
@@ -75,12 +77,24 @@ def PuTTY(jumphost: str | None, executable: str, node: dict[str, str]) -> None:
 def MTPuTTY(jumphost: str | None, config: str, devices: dict[str, dict[str, str]]) -> None:
     """Create MTPuTTY terminal sessions for lab devices (sessions must still be manually launched from MTPuTTY GUI)"""
     try:
-        copy(src=config, dst="mtputty_backup.xml")
+        existingBackups = []
+        for file in os.listdir("."):
+            isBackup = re.search(r"(?<=^mtputty_backup)[1-9][0-9]*(?=\.xml$)", file)
+            if isBackup:
+                existingBackups.append(int(isBackup.group()))
+
+        existingBackups.sort()
+
+        try:
+            backupFileName = f"mtputty_backup{existingBackups[-1] + 1}.xml"
+        except IndexError:
+            backupFileName = "mtputty_backup1.xml"
+        copy(src=config, dst=backupFileName)
     except (OSError, shutil.SameFileError) as e:
-        print(f"Error while creating a backup of the MTPuTTY configuration at \"mtputty_backup.xml\" in the current directory: {e}")
+        print(f"Error while creating a backup of the MTPuTTY configuration at {backupFileName} in the current directory: {e}")
         exit(-1)
 
-    print("Backup of the MTPuTTY configuration successfully created in the \"mtputty_backup.xml\" file in the current directory")
+    print(f"Backup of the MTPuTTY configuration successfully created in the {backupFileName} file in the current directory")
 
     try:
         tree = ET.parse(config)
@@ -105,12 +119,12 @@ def MTPuTTY(jumphost: str | None, config: str, devices: dict[str, dict[str, str]
         ET.SubElement(server, "SavedSession").text = jumphost if jumphost is not None else "Default Settings"
         ET.SubElement(server, "DisplayName").text = name
         ET.SubElement(server, "ServerName").text = node["address"]
-        ET.SubElement(server, "Port").text = node["ports"]["ssh"]
+        ET.SubElement(server, "Port").text = str(node["ports"]["ssh"])
         ET.SubElement(server, "UserName").text = node["username"]
         if node["password"] is not None:
             ET.SubElement(server, "Password").text = node["password"]
         ET.SubElement(server, "CLParams").text = f'{f"-load {jumphost} " if jumphost is not None else ""}-P {node["ports"]["ssh"]} -l {node["username"]}{" -pw *****" if node["password"] is not None else ""} {node["address"]}'
-        print(f"Creating session {name} in MTPuTTY database with address {node['address']}, port {node['port']}, username {node['username']}{f", password {node['password']}" if node["password"] is not None else ""}...")
+        print(f"Creating session {name} in MTPuTTY database with address {node['address']}, port {node['ports']['ssh']}, username {node['username']}{f", password {node['password']}" if node["password"] is not None else ""}...")
 
     try:
         tree.write(config)
