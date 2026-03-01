@@ -212,7 +212,7 @@ subcommands that are actually runnable.
 
 | Command              | Purpose                                                                                                         |
 |----------------------|-----------------------------------------------------------------------------------------------------------------|
-| retrieve-from-api    | Automatically retrieve running lab devices from the Containerlab REST API                                       |
+| retrieve-from-api    | Automatically retrieve running lab devices from the Containerlab API                                            |
 | parse-inspect-output | Process `clab inspect` output to find details about running lab devices                                         |
 | inject-custom-ports  | Inject customized ports into the data file used by the utility containing information about running lab devices |
 
@@ -647,3 +647,4 @@ environment:
   <node name 2>:
     ssh: <custom port>
 ```
+
