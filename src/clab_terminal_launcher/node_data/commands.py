@@ -17,7 +17,7 @@ def node_data() -> None:
 
 @node_data.command()
 @click.option("--envfile", "-e",
-              help="OPTIONAL; specify the path to the plain text Bash-style environment variable file where the password is contained as the CLABPASS variable; if specified, takes precedence over system-defined environment variable")
+              help="OPTIONAL; specify the path to the plain text Bash-style environment variable file where the password is contained as the CLABPASS variable; if specified, takes precedence over default behavior of using system-defined environment variable")
 @click.option("--host", "-h", "clabHost", default="localhost",
               help="Specify the IP address/DNS hostname of the Containerlab host; defaults to localhost (you do not need to include this option if Containerlab is running locally)")
 @click.option("--labs", "-l", "labs",
