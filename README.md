@@ -78,4 +78,4 @@ That's where the terminal launcher for Containerlab comes into play. Could I hav
 ## Installation and Usage Documentation
 
 Check out more about how to install and use this utility by referencing the
-[installation and usage instructions](docs/installation-usage.md)!
+[installation and usage instructions](https://github.com/kelvintechie1/clab-terminal-launcher/blob/main/docs/installation-usage.md)!
