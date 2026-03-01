@@ -23,7 +23,7 @@ jobs:
     - name: Set up the project Python version
       uses: actions/setup-python@v6
       with:
-        python-version: "pyproject.toml"
+        python-version-file: "pyproject.toml"
 
     - name: Install Astral uv
       uses: astral-sh/setup-uv@v7
