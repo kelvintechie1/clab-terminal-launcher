@@ -27,6 +27,13 @@
 
 ---
 
+## Caveats, Limitations, and Warnings
+* **Only SSH is supported as a connection method at this time.** However, the utility's codebase is architected such that it would be fairly easy to expand beyond SSH, so that could change if the need arises!
+* **When running `launch` commands on WSL 2 referencing a Windows executable, the CLI has a tendency to get messed up.** In most cases, you simply need to run the `reset` command to fix this. You can also just run the utility directly on Windows to avoid this issue.
+* On macOS, since applications are technically directories, you can't just provide `/Applications/<app>.app` as the executable to the launch command (e.g., `/Applications/SecureCRT.app` for SecureCRT). Instead, you need to provide `/Applications/<app>.app/Contents/MacOS/<app>` (e.g., `/Applications/SecureCRT.app/Contents/MacOS/SecureCRT` for SecureCRT) as the executable option in order for the launch command to work correctly.
+* ***WARNING***: It is assumed that lab device passwords are **NOT** sensitive. They are stored in **PLAIN TEXT** inside of the credentials YAML file. Do **NOT** use a password that actually matters for your lab devices!!!
+
+
 ## Installation
 
 There are a few requirements for installing and using the clab terminal launcher:

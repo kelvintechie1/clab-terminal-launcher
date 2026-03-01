@@ -52,7 +52,6 @@ That's where the terminal launcher for Containerlab comes into play. Could I hav
 
 ## Supported Features
 
-### Features
 * Highly customizable, but still easy to use - lots of options to allow this utility to work with all manner of Containerlab/terminal client environments
   * Supported terminal emulators:
     * [SecureCRT](https://www.vandyke.com/products/securecrt/) (preferred) - VanDyke Software
@@ -69,11 +68,6 @@ That's where the terminal launcher for Containerlab comes into play. Could I hav
 * Detailed console logging to display useful information during utility execution
 * Complete error handling and input validation to ensure safe execution and clean/useful error messages - **as far as I'm aware at least, don't take this as a challenge please! :)**
 * Lightweight footprint, with few external dependencies; pure Python, installation is as easy as running `pip install`!
-
-### Caveats, Limitations, and Warnings
-* **Only SSH is supported as a connection method at this time.** However, the utility's codebase is architected such that it would be fairly easy to expand beyond SSH, so that could change if the need arises!
-* **When running `launch` commands on WSL 2 referencing a Windows executable, the CLI has a tendency to get messed up.** In most cases, you simply need to run the `reset` command to fix this. You can also just run the utility directly on Windows to avoid this issue.
-* ***WARNING***: It is assumed that lab device passwords are **NOT** sensitive. They are stored in **PLAIN TEXT** inside of the credentials YAML file. Do **NOT** use a password that actually matters for your lab devices!!!
 
 ## Installation and Usage Documentation
 
