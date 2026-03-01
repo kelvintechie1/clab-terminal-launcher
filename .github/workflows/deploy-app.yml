@@ -11,7 +11,7 @@ on:
 
 jobs:
   build:
-    if: github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'newversion')
+    if: contains(github.event.pull_request.labels.*.name, 'newversion') && github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     permissions:
       contents: read
