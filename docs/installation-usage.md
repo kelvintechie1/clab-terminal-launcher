@@ -41,7 +41,7 @@ is personally my favorite method. This will allow you to isolate the terminal la
 from other Python packages on your system.
 
 From there, after activating your virtual environment (check out Python's documentation for more details on how to do this using
-your specific OS/platform), you just need to run `pip install clab-terminal-launcher`. That's it!
+your specific OS/platform), you just need to run `pip install clab_terminal_launcher`. That's it!
 
 Here's an example of doing it on my Linux system:
 
@@ -52,7 +52,7 @@ Using CPython 3.12.3 interpreter at: /usr/bin/python3
 Creating virtual environment at: clab-term-launcher-example
 Activate with: source clab-term-launcher-example/bin/activate
 kelvintr@KTP-WNDS-WK01:~/test$ source clab-term-launcher-example/bin/activate
-(clab-term-launcher-example) kelvintr@KTP-WNDS-WK01:~/test$ uv pip install clab-terminal-launcher
+(clab-term-launcher-example) kelvintr@KTP-WNDS-WK01:~/test$ uv pip install clab_terminal_launcher
 Using Python 3.12.3 environment at: clab-term-launcher-example
 Resolved 10 packages in 61ms
 Prepared 1 package in 8ms
@@ -647,4 +647,5 @@ environment:
   <node name 2>:
     ssh: <custom port>
 ```
+
 
