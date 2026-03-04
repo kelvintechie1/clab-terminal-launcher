@@ -25,8 +25,7 @@ Containerlab compared to other network emulation platforms. That said, why not? 
 However, one annoyance of Containerlab (in its current form) is how it handles connections
 to the containerized network devices running inside of labs. Since the management networking is handled
 natively using the Docker bridge driver, it means that, by default, only the Containerlab host has access 
-to the management IP addresses of the virtualized devices. Currently, Containerlab has no mechanism to map
-the management port (e.g., SSH port) of the lab devices to a port on the Containerlab host's IP address via PAT/port forwarding.
+to the management IP addresses of the virtualized devices.
 
 This is fine if Containerlab is running directly on your client system (e.g., your laptop), but it becomes a significant
 concern if you are trying to run Containerlab on a remote system (e.g., a beefier server with more resources to run more

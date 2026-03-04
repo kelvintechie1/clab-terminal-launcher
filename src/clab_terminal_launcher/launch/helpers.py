@@ -53,11 +53,13 @@ def parse_lab_devices(devicesFile: str,
                 except KeyError:
                     continue
                 except TypeError as e:
+                    if creds[condition] is None:
+                        break
                     handle_dict_access_errors(exception=e, errorString=f"Error while processing credentials for {condition} in {credsFile}")
 
             if "username" not in deviceDict:
-                print(f'Error: Unable to retrieve username for device {device["name"]}')
-                exit(-1)
+                print(f'Error: Unable to retrieve username for device {device["name"]}; skipping device...')
+                continue
 
             if "password" not in deviceDict:
                 deviceDict["password"] = None

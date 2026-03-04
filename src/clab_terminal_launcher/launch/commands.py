@@ -46,7 +46,7 @@ def launch() -> None:
               help="Specify the name of the jumphost session in SecureCRT (e.g., the session for the Containerlab host itself) using path notation (i.e., a session called s stored under a folder called f would be notated as f\\s")
 def SecureCRT(jumphost: str | None, executable: str, node: dict[str, str]) -> None:
     """Launch SecureCRT terminals to lab devices"""
-    cmd = [f'{executable}', '/TITLEBAR', f'{node["name"]}', '/T', '/ssh2', f'{node["address"]}', '/l', f'{node["username"]}', '/P', f'{node["ports"]["ssh"]}', '/accepthostkeys']
+    cmd = [f'{executable}', '/T', '/ssh2', f'{node["address"]}', '/l', f'{node["username"]}', '/P', f'{node["ports"]["ssh"]}', '/accepthostkeys']
     if node["password"] is not None:
         cmd[6:6] = ['/password', f'{node["password"]}']
     if jumphost is not None:

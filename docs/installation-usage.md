@@ -7,23 +7,24 @@
   * [Caveats, Limitations, and Warnings](#caveats-limitations-and-warnings)
   * [Installation](#installation)
   * [Usage](#usage)
-    * [Examples](#examples)
-      * [Example 1: API + SecureCRT, Manual Commands](#example-1-api--securecrt-manual-commands)
-      * [Example 2: API + SecureCRT, Quick Command](#example-2-api--securecrt-quick-command)
-      * [Example 3: Inspect + PuTTY, Manual Commands](#example-3-inspect--putty-manual-commands)
-    * [Command Reference](#command-reference)
-      * [Manual Command: API Retrieval](#manual-command-api-retrieval)
-      * [Manual Command: "clab inspect" Output](#manual-command-clab-inspect-output)
-      * [Manual Command: Port Customization (Optional)](#manual-command-port-customization-optional)
-      * [Manual Command: Launching with SecureCRT](#manual-command-launching-with-securecrt)
-      * [Manual Command: Launching with PuTTY](#manual-command-launching-with-putty)
-      * [Manual Command: Launching with MTPuTTY](#manual-command-launching-with-mtputty)
-      * [Manual Command: Launching with native OpenSSH](#manual-command-launching-with-native-openssh)
-      * [Shortcut/Quick Command](#shortcutquick-command)
-    * [File Reference](#file-reference)
-      * [Credentials File](#credentials-file)
-      * [Configuration File (Environment Variables)](#configuration-file-environment-variables)
-      * [Custom Ports](#custom-ports)
+  * [Examples](#examples)
+    * [Example 1: API + SecureCRT, Manual Commands](#example-1-api--securecrt-manual-commands)
+    * [Example 2: API + SecureCRT, Quick Command](#example-2-api--securecrt-quick-command)
+    * [Example 3: Inspect + PuTTY, Manual Commands](#example-3-inspect--putty-manual-commands)
+  * [Command Reference](#command-reference)
+    * [Manual Command: API Retrieval](#manual-command-api-retrieval)
+    * [Manual Command: "clab inspect" Output](#manual-command-clab-inspect-output)
+    * [Manual Command: Port Customization (Optional)](#manual-command-port-customization-optional)
+    * [Manual Command: Launching with SecureCRT](#manual-command-launching-with-securecrt)
+    * [Manual Command: Launching with PuTTY](#manual-command-launching-with-putty)
+    * [Manual Command: Launching with MTPuTTY](#manual-command-launching-with-mtputty)
+    * [Manual Command: Launching with native OpenSSH](#manual-command-launching-with-native-openssh)
+    * [Shortcut/Quick Command](#shortcutquick-command)
+  * [File Reference](#file-reference)
+    * [Credentials File](#credentials-file)
+      * [Use Case: Excluding Specific Nodes from Connection Attempts](#use-case-excluding-specific-nodes-from-connection-attempts)
+    * [Configuration File (Environment Variables)](#configuration-file-environment-variables)
+    * [Custom Ports](#custom-ports)
 <!-- TOC -->
 
 ---
@@ -108,14 +109,14 @@ We'll outline the steps to take for all of the possible answers to these four qu
 look at all of them, unless you want to!* Feel free to jump to the sections that are relevant to the decisions that
 you made.
 
-### Examples
+## Examples
 
 You'll find the example files (e.g., credentials files, JSON input/output, .env/config files, etc.) in the 
 [docs/examples subdirectory of this repository](examples/).
 
 Refer to the command reference/documentation sections below for more details about how these commands operate.
 
-#### Example 1: API + SecureCRT, Manual Commands
+### Example 1: API + SecureCRT, Manual Commands
 
 In this example, we are using the following parameters:
 
@@ -144,7 +145,7 @@ Launching SSH session to device clab-test-srl1 using address clab-test-srl1, por
 
 ![Example 1](images/example1.png)
  
-#### Example 2: API + SecureCRT, Quick Command
+### Example 2: API + SecureCRT, Quick Command
 
 In this example, we are using the same parameters as example 1, except contained inside of a 
 [configuration file](examples/config.env) called config.env. Since this is the default file name that the quick command 
@@ -166,7 +167,7 @@ Launching SSH session to device clab-test-srl1 using address clab-test-srl1, por
 
 ![Example 2](images/example2.png)
 
-#### Example 3: Inspect + PuTTY, Manual Commands
+### Example 3: Inspect + PuTTY, Manual Commands
 
 In this example, we are using the following parameters:
 
@@ -191,7 +192,7 @@ Launching SSH session to device clab-test-srl1 using address clab-test-srl1, por
 
 ![Example 3](images/example3.png)
 
-### Command Reference
+## Command Reference
 
 The command structure of the utility is `clab-terminal-launcher <commands> <options>`. For any command, the `--help`
 option is available to show helpful descriptions of the command and its associated options.
@@ -224,7 +225,7 @@ subcommands that are actually runnable.
 | parse-inspect-output | Process `clab inspect` output to find details about running lab devices                                         |
 | inject-custom-ports  | Inject customized ports into the data file used by the utility containing information about running lab devices |
 
-#### Manual Command: API Retrieval
+### Manual Command: API Retrieval
 
 This is the preferred and easiest way to get data about the running nodes in Containerlab.
 This relies on the `clab-terminal-launcher node-data retrieve-from-api` command. Using this command, the utility will
@@ -263,7 +264,7 @@ The following parameters are available:
 | --username, -u                 | Yes      | N/A                                            | Used to specify the username to authenticate to the Containerlab API                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | --password, -p                 | No       | N/A - seeks other methods to obtain password   | **INSECURE!!! INCLUDED FOR EASE OF USE ONLY!!! ONLY USE IF YOU WOULDN'T CARE THAT YOUR NEIGHBOR 6 DOORS DOWN LEARNED THIS PASSWORD**<br><br>Used to specify the password to authenticate to the Containerlab API. If specified, it will take precedence over all other methods for obtaining the password (e.g., environment variable). If not specified, the utility will look for the "**CLABPASS**" environment variable next. If that is not found, as a last resort, the utility will interactively ask you to input the password via the console before the connection proceeds |
 
-#### Manual Command: "clab inspect" Output
+### Manual Command: "clab inspect" Output
 
 As an alternative to the API method, if enabling and accessing the Containerlab API from your client machine is 
 untenable (e.g., due to firewall/security restrictions for HTTP traffic), you can also feed the utility a text file
@@ -297,7 +298,7 @@ The following parameters are available:
 | --inputfile, -i                | Yes      | N/A                     | Used to specify the JSON file containing the `clab inspect` output required for the command to operate, as discussed above                                                                                                                                             |
 | --outputfile, -o               | Yes      | N/A                     | Used to specify the path/name of the file that will be used to store the rendered/parsed running node data generated by this command and used by other commands in the utility (examples listed above)                                                                 |
 
-#### Manual Command: Port Customization (Optional)
+### Manual Command: Port Customization (Optional)
 
 If your Containerlab topology definition file has a custom port mapping configured that must be observed when forming
 the connection/session to the lab device, the `clab-terminal-launcher node-data inject-custom-ports` must be used
@@ -335,7 +336,7 @@ The following parameters are available:
 | --portfile, -p                 | Yes      | N/A                     | Specify the path/name of the YAML file created using the format described above that contains the custom port numbers for each node                                                                                                                                                            |
 | --output, -o                   | No       | Same as datafile        | Specify the output path for the new rendered JSON file containing the custom port numbers for use by other commands (e.g., launch commands); only needed if you don't want to replace the original data file, the value for this option CANNOT be the same as the value of the datafile option |
 
-#### Manual Command: Launching with SecureCRT
+### Manual Command: Launching with SecureCRT
 
 If you're using SecureCRT as your terminal emulator of choice, then the `clab-terminal-launcher launch securecrt` manual
 command is exactly what you're looking for!
@@ -365,7 +366,7 @@ The following parameters are available:
 | --executable, -e               | No       | securecrt               | Specify the path/name of the executable for SecureCRT that will be used in the command to automatically launch sessions to lab devices; it's recommended that you confirm this is a valid command by typing it into the terminal/your shell and ensuring that SecureCRT launches                                                                                                                                                                |
 | --session, -s                  | No       | N/A                     | If using the Containerlab host as a jumphost, specify the session name, as defined in SecureCRT, for the connection to the Containerlab host/jumphost.<br><br>Use the full path to the session, including the folders, as shown in the SecureCRT session manager. For example, if clab is a session stored in f2, which is a folder nested inside of an outer folder f1, you should provide **f1\f2\clab** as the value of this option          |
 
-#### Manual Command: Launching with PuTTY
+### Manual Command: Launching with PuTTY
 
 Automatically launching sessions using regular ol' PuTTY (i.e., one session per window) is as simple as using the
 `clab-terminal-launcher launch putty` manual command.
@@ -395,7 +396,7 @@ The following parameters are available:
 | --executable, -e               | No       | putty                   | Specify the path/name of the executable for PuTTY that will be used in the command to automatically launch sessions to lab devices; it's recommended that you confirm this is a valid command by typing it into the terminal/your shell and ensuring that PuTTY launches                                                                                                                                                                          |
 | --session, -s                  | No       | N/A                     | If using the Containerlab host as a jumphost, specify the session name, as defined in PuTTY, for the connection to the Containerlab host/jumphost.                                                                                                                                                                                                                                                                                                |
 
-#### Manual Command: Launching with MTPuTTY
+### Manual Command: Launching with MTPuTTY
 
 Are you on Windows? Do you like that PuTTY is free, but hate that it doesn't support multiple tabs/sessions in a single
 window? If you said yes to all of these, consider using MTPuTTY! This utility supports MTPuTTY using the
@@ -437,7 +438,7 @@ The following parameters are available:
 | --config, -f                   | No       | %appdata%\TTYPlus\mtputty.xml | Specify the path/name of the mtputty.xml file used as the MTPuTTY configuration file; the utility will create the sessions to the lab devices within this configuration file and save the new contents back to this file                                                                                                                                                                                                                          |
 | --session, -s                  | No       | N/A                           | If using the Containerlab host as a jumphost, specify the session name, as defined in PuTTY, for the connection to the Containerlab host/jumphost.                                                                                                                                                                                                                                                                                                |
 
-#### Manual Command: Launching with native OpenSSH
+### Manual Command: Launching with native OpenSSH
 
 If you'd rather not use a separate terminal emulator and instead rely on the OpenSSH client (i.e., the `ssh` command)
 and your native terminal of choice (e.g., Windows Terminal, macOS terminal, one of a million options for Linux 
@@ -459,7 +460,7 @@ The following parameters are used:
 | --session, -s                  | No       | N/A                     | If using the Containerlab host as a jumphost, specify the session name, as defined in your OpenSSH client config file, for the connection to the Containerlab host/jumphost. This will be used as the **-J** option in the SSH command                                                                                                                                                                                                                                                                                 |
 | --terminal, -t                 | Yes      | N/A                     | Specify the full command for the executable of the terminal that is being used; the format `<terminal command> <ssh command>` is assumed, meaning that the SSH command for each node that is automatically generated by this utility will be placed after the terminal command you provide in this option; your terminal must support that format (most do!) for this option to work.<br><br>Note that your terminal command should include any flags needed, such as the ones to launch each SSH session in a new tab |
 
-#### Shortcut/Quick Command
+### Shortcut/Quick Command
 
 Do the other options sound like a bigger hassle than they're worth, with all of those manual commands? No worries!
 This utility also has a shortcut command that is able to automatically trigger any of the other commands, based on
@@ -483,9 +484,9 @@ The following parameters are available:
 |--------------------------------|----------|---------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
 | --config, -c                   | No       | config.env (in the current directory; equivalent to "./config.env") | Specify the path/name of the .env formatted config file containing the settings that the quick command should use when executing the utility |
 
-### File Reference
+## File Reference
 
-#### Credentials File
+### Credentials File
 
 This is a YAML file that is essential for the utility to be able to locate the username and, optionally, password that
 it should use to initiate a connection/session to the running devices in your Containerlab lab! This can be a bit of a
@@ -517,7 +518,7 @@ to the device.
 There are a couple of things to note about this file:
 
 * Each device may only match on **one** entry (the most preferred, based on the order of precedence described below). When it matches on an entry for a device, the utility will not evaluate any other entries for that device. You can't get a username from one entry and a password from another, for example.
-* Each device in the topology must be able to match at least one entry in your credentials file to get its username. Passwords are optional, but usernames are required. If the entry matched by a device doesn't contain a username field (or if the device doesn't match an entry at all), the utility will generate an error and exit.
+* Each device in the topology must be able to match at least one entry in your credentials file to get its username. Passwords are optional, but usernames are required. _If the entry matched by a device doesn't contain a username field (or if the device doesn't match an entry at all), the utility will skip the device and NOT attempt to establish a connection to it._
   * In practice, this means it's recommended that each entry contain at least a username to avoid any issues.
   * If a password isn't associated with the entry a device matches on, password autofill will not be available for that session. It may still be available for other devices if a password is associated with them and the launch method chosen supports password autofill functionality.
 * You can have as many filters as you want, and the order does not matter! Default can go at the top, bottom, or #5 in the list if you want!
@@ -550,7 +551,40 @@ default:
   password: admin
 ```
 
-#### Configuration File (Environment Variables)
+#### Use Case: Excluding Specific Nodes from Connection Attempts
+
+As noted above, if the terminal launcher utility can't find a username in the entry matched by a particular lab
+device/node, it will refuse to attempt a connection to the device. In a lot of cases, this is not a desirable behavior.
+After all, we want to be able to manage the devices in our lab!
+
+However, there are certain circumstances where we want to avoid connecting to a device in our lab. For example, what if
+the device doesn't support remote connections (e.g., SSH)? What if the device has already been pre-configured and, thus,
+a connection would simply be unnecessary and a waste of time/space?
+
+The intended way to handle this is using the credentials file! All we need to do is find whichever entry in the
+credentials file matches on the lab device that we **DON'T** want to connect to and simply ensure that it does _not_
+contain a username field. 
+
+The easiest way to do this is to define the filter as an entry, but leave it entirely empty. Any filter will work for
+this - the most convenient one to use will depend on how many devices we want to exclude. As an example:
+
+```yaml
+kind:nokia_srlinux:
+  username: admin
+  password: NokiaSrl1!
+kind:linux:
+default:
+  username: admin
+  password: admin
+```
+
+This credentials file defines entries for Nokia SR Linux devices, Linux devices, and all other devices (i.e., the
+default entry). However, notice that the entry for Linux devices (`kind:linux:`) has nothing under it. This is an
+empty entry. As such, any devices that match it (i.e., all of our Linux devices, unless matched by a more specific
+filter, such as an image or node name filter) will be excluded from consideration by the utility, since there is no
+username field. The utility will NOT attempt to connect to these devices.
+
+### Configuration File (Environment Variables)
 
 There are two scenarios where the utility needs to read variables from a configuration file. In both cases, the format
 is the same:
@@ -638,7 +672,7 @@ expected values for those keys/options.
 > until the corresponding retrieval/launch method is selected. Is there a practical use case for this fun tidbit?
 > Probably not, but as the person who developed this utility, I think it's kind of fun to think about!
 
-#### Custom Ports
+### Custom Ports
 
 For this feature to work, a YAML file must be defined and provided to the utility using the following format, replacing 
 the occurrences of `<lab name #>`, `<node name #>`, and `<custom port>` with their respective values based on your 
